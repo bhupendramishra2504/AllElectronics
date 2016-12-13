@@ -1,0 +1,127 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:id="@+id/search_layout"
+    android:background="#0087BD"
+    android:fillViewport="true"
+    android:layout_height="match_parent"
+    tools:context="com.mlmishra.bhupendramishra.allelectronics.Controller_program"
+    android:fadeScrollbars="false">
+
+    <LinearLayout
+        android:layout_height="match_parent"
+        android:layout_width="match_parent"
+        android:orientation="vertical"
+        android:layout_gravity="right|center_horizontal"
+        >
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="30dp"
+            android:text="Allelectronics Signup"
+            android:textColor="#ffffff"
+            android:textSize="20sp"
+            android:textStyle="bold"/>
+
+        <LinearLayout
+            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            android:orientation="vertical"
+            android:gravity="top"
+            android:layout_marginTop="30dp"
+
+            >
+
+            <EditText
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/suser1"
+                android:inputType="text"
+                android:hint="username"
+                android:textCursorDrawable="@null"
+                android:textColor="#ffffff"
+                android:imeOptions="actionDone"
+                android:singleLine="true"
+                android:paddingLeft="18dp"
+                android:paddingRight="18dp"
+                android:paddingTop="10dp"
+                android:paddingBottom="10dp"
+                />
+
+            <EditText
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/suser"
+                android:inputType="text"
+                android:hint="e-mail"
+                android:textCursorDrawable="@null"
+                android:textColor="#ffffff"
+                android:imeOptions="actionDone"
+                android:singleLine="true"
+                android:paddingLeft="18dp"
+                android:paddingRight="18dp"
+                android:paddingTop="10dp"
+                android:paddingBottom="10dp"
+                />
+
+            <EditText
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/spassword"
+                android:inputType="textPassword"
+                android:hint="password"
+                android:textCursorDrawable="@null"
+                android:textColor="#ffffff"
+                android:imeOptions="actionDone"
+                android:singleLine="true"
+                android:paddingLeft="18dp"
+                android:paddingRight="18dp"
+                android:paddingTop="5dp"
+                />
+
+            <EditText
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/sconfirmpassword"
+                android:inputType="textPassword"
+                android:hint="confirm password"
+                android:textColor="#ffffff"
+                android:textCursorDrawable="@null"
+                android:imeOptions="actionDone"
+                android:singleLine="true"
+                android:paddingLeft="18dp"
+                android:paddingRight="18dp"
+                android:paddingTop="5dp"
+
+                />
+
+            <CheckBox
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/tc"
+                android:text="I agree to the terms and conditions"
+                android:textColor="#ffffff"
+                android:paddingTop="5dp"
+               />
+
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Signup"
+                android:textSize="20sp"
+                android:layout_gravity="center"
+                android:id="@+id/ssignup"
+                android:paddingLeft="8dp"
+                android:paddingRight="8dp"
+                android:textColor="#ffffff"
+                android:background="@drawable/allborder"
+                />
+
+
+        </LinearLayout>
+
+
+
+    </LinearLayout>
+</ScrollView>

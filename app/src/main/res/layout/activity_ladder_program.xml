@@ -1,0 +1,58 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:id="@+id/scrollView1"
+    android:background="#0087BD"
+    android:fillViewport="true"
+    android:layout_height="match_parent"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    android:paddingBottom="16dp">
+<LinearLayout
+    android:layout_height="wrap_content"
+    android:layout_width="match_parent"
+    android:orientation="vertical"
+    tools:context="com.mlmishra.bhupendramishra.allelectronics.Controller_program"
+    android:weightSum="1">
+
+    <TextView
+        android:text="PLC LADDER PROGRAMMING "
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/ltv"
+        android:layout_weight="0.08"
+        android:textColor="#ffffff"
+        android:textSize="20sp"
+        android:textStyle="bold"/>
+
+    <Button
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Select Options"
+        android:textColor="#ffffff"
+        android:background="@drawable/allborder"
+        android:id="@+id/buttonp3"
+        android:layout_gravity="center_horizontal"
+         />
+
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="250dp"
+        android:id="@+id/lpimageview"
+        android:src="@drawable/plc"
+         />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/ltv1"
+        android:layout_weight="0.08"
+        android:textColor="#ffffff"
+        android:textSize="15sp"
+        android:textStyle="bold"/>
+
+
+    </LinearLayout>
+    </ScrollView>

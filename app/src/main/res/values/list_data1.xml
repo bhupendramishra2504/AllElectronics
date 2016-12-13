@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="basic_electronics">
+        <item>Resistors</item>
+        <item>capacitor</item>
+        <item>Diode</item>
+        <item>Transistor</item>
+        <item>Digital Gates</item>
+        <item>Microcontrollers</item>
+        <item>Microprocessors</item>
+        <item>Analog Comminication</item>
+        <item>Digital Communication</item>
+
+    </string-array>
+</resources>

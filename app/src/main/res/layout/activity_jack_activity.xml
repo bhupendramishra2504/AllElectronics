@@ -1,0 +1,63 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:id="@+id/scrollView1"
+    android:background="#0087BD"
+    android:fillViewport="true"
+    android:layout_height="match_parent"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    android:paddingBottom="16dp">
+    <LinearLayout
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:orientation="vertical"
+        tools:context="com.mlmishra.bhupendramishra.allelectronics.Calculator"
+        android:weightSum="1"
+        android:gravity="center_horizontal">
+
+        <TextView
+            android:text="JACK CONNECTOR PINOUT DIAGRAM"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/sdtv1"
+            android:layout_weight="0.08"
+            android:textSize="20sp"
+            android:textColor="#ffffff"
+            android:textStyle="bold"/>
+
+
+
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="250dp"
+            android:id="@+id/jackiv1"
+            android:src="@drawable/jack1"
+            android:layout_centerHorizontal="true"
+            />
+
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/jackiv2"
+            android:src="@drawable/jack"
+            android:layout_centerHorizontal="true"
+            />
+
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/jackiv3"
+            android:src="@drawable/jack2"
+            android:layout_centerHorizontal="true"
+            />
+
+
+
+
+    </LinearLayout>
+</ScrollView>

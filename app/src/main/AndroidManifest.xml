@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.mlmishra.bhupendramishra.allelectronics" >
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.ACCESS_DOWNLOAD_MANAGER" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
+    <uses-permission android:name="android.permission.WRITE_CALENDAR" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+
+    <application
+        android:name=".Allelectronics"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:theme="@style/AppTheme" >
+        <activity
+            android:name=".Search_text"
+            android:configChanges="keyboardHidden|orientation"
+            android:label="@string/app_name"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateHidden" >
+        </activity>
+        <activity
+            android:name=".WebViewActivity"
+            android:configChanges="keyboardHidden|orientation"
+            android:screenOrientation="portrait"
+            android:theme="@android:style/Theme.NoTitleBar" />
+        <activity
+            android:name=".Table_content"
+            android:configChanges="keyboardHidden|orientation"
+            android:label="@string/title_activity_table_content"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:name=".List_click_result"
+            android:configChanges="keyboardHidden|orientation"
+            android:label="@string/title_activity_list_click_result"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:name=".Saved_Pages"
+            android:configChanges="keyboardHidden|orientation"
+            android:label="@string/title_activity_saved__pages"
+            android:parentActivityName=".List_click_result"
+            android:screenOrientation="nosensor"
+            android:windowSoftInputMode="stateHidden" >
+        </activity>
+        <activity
+            android:name=".Saved_page_webview"
+            android:label="@string/title_activity_saved_page_activity" >
+        </activity>
+        <activity
+            android:name=".Options"
+            android:label="@string/title_activity_options" >
+        </activity>
+        <activity
+            android:name="com.facebook.FacebookActivity"
+            android:label="@string/app_name"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+        <activity
+            android:name="com.google.android.gms.ads.AdActivity"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|uiMode|screenSize|smallestScreenSize"
+            android:theme="@android:style/Theme.Translucent" />
+
+        <meta-data
+            android:name="com.facebook.sdk.ApplicationId"
+            android:value="@string/app_id" />
+
+        <provider
+            android:name="com.facebook.FacebookContentProvider"
+            android:authorities="com.facebook.app.FacebookContentProvider1445339789127883" />
+
+        <meta-data
+            android:name="com.google.android.gms.version"
+            android:value="@integer/google_play_services_version" />
+
+        <activity
+            android:name=".Controller_program"
+            android:label="@string/title_activity_controller_program"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateHidden" >
+        </activity>
+        <activity
+            android:name=".Ladder_program"
+            android:label="@string/title_activity_ladder_program"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateHidden" >
+        </activity>
+        <activity
+            android:name=".MATLAB_Script"
+            android:label="@string/title_activity_matlab__script"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateHidden" >
+        </activity>
+        <activity
+            android:name=".Raspberry_code"
+            android:label="@string/title_activity_raspberry_code"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateHidden" >
+>
+        </activity>
+        <activity
+            android:name=".Help"
+            android:label="@string/title_activity_help"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateHidden" >
+        </activity>
+        <activity
+            android:name=".Calculator"
+            android:label="@string/title_activity_calculator"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateHidden" >
+        </activity>
+        <activity
+            android:name=".Connector_List"
+            android:label="@string/title_activity_connector__list"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateHidden" >
+        </activity>
+        <activity
+            android:name=".Connector_list_result_activity"
+            android:label="@string/title_activity_connector_list_result_activity"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateHidden" >
+        </activity>
+        <activity
+            android:name=".Usb_activity"
+            android:label="@string/title_activity_usb_activity"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateHidden" >
+        </activity>
+        <activity
+            android:name=".Rs232_activity"
+            android:label="@string/title_activity_rs232_activity"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateHidden" >
+        </activity>
+        <activity
+            android:name=".Lpt_activity"
+            android:label="@string/title_activity_lpt_activity"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateHidden" >
+        </activity>
+        <activity
+            android:name=".Vga_activity"
+            android:label="@string/title_activity_vga_activity"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateHidden" >
+        </activity>
+        <activity
+            android:name=".Ethernet_activity"
+            android:label="@string/title_activity_ethernet_activity"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateHidden" >
+        </activity>
+        <activity
+            android:name=".Hdmi_activity"
+            android:label="@string/title_activity_hdmi_activity"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateHidden" >
+        </activity>
+        <activity
+            android:name=".Sdcard_activity"
+            android:label="@string/title_activity_sdcard_activity"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateHidden" >
+        </activity>
+        <activity
+            android:name=".Sata_activity"
+            android:label="@string/title_activity_sata_activity"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateHidden" >
+        </activity>
+        <activity
+            android:name=".Jack_activity"
+            android:label="@string/title_activity_jack_activity"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateHidden" >
+        </activity>
+        <activity
+            android:name=".Firewire_activity"
+            android:label="@string/title_activity_firewire_activity"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateHidden" >
+        </activity>
+        <activity
+            android:name=".Iphonelightning"
+            android:label="@string/title_activity_iphonelightning"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateHidden" >
+        </activity>
+        <activity
+            android:name=".Rca_activity"
+            android:label="@string/title_activity_rca_activity"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateHidden" >
+        </activity>
+        <activity
+            android:name=".VHDL_codes"
+            android:label="@string/title_activity_vhdl_codes"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateHidden" >
+        </activity>
+        <activity
+            android:name=".Signup_firebase"
+            android:label="@string/title_activity_signup_firebase"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateHidden" >
+        </activity>
+        <activity
+            android:name=".Allelectronics"
+            android:label="@string/title_activity_allelectronics"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateHidden" >
+        </activity>
+        <activity
+            android:name=".Login_activity"
+            android:label="@string/title_activity_login_activity"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateHidden" >
+        </activity>
+        <activity
+            android:name=".Signup_activity"
+            android:label="@string/title_activity_signup_activity"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateHidden" >
+        </activity>
+        <activity
+            android:name=".Main_menu"
+            android:label="@string/title_activity_main_menu"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateHidden" >
+        </activity>
+        <activity
+            android:name=".Submitted_project"
+            android:label="@string/title_activity_submitted_project"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateHidden" >
+        </activity>
+        <activity
+            android:name=".Project_status"
+            android:label="@string/title_activity_project_status" >
+        </activity>
+        <activity
+            android:name=".Start_activity"
+            android:label="@string/app_name"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateHidden" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".BluetoothTerminal"
+            android:label="@string/title_activity_bluetooth_terminal" >
+        </activity>
+    </application>
+
+</manifest>

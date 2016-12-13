@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+    <!-- Single menu_ladder item
+         Set id, icon and Title for each menu_ladder item
+    -->
+    <item android:id="@+id/introduction"
+        android:title="INTRODUCTION" />
+
+    <item android:id="@+id/orgate"
+        android:title="OR GATE" />
+
+    <item android:id="@+id/andgate"
+        android:title="AND GATE " />
+
+    <item android:id="@+id/xorgate"
+        android:title="XOR GATE" />
+
+    <item android:id="@+id/combinational"
+        android:title="COMBINATIONAL LOGIC" />
+
+    <item android:id="@+id/multiplexer"
+        android:title="MULTIPLEXER" />
+
+    <item android:id="@+id/decoder"
+        android:title="DECODER" />
+
+    <item android:id="@+id/adder"
+        android:title="ADDER" />
+
+    <item android:id="@+id/comparator"
+        android:title="COMPARATOR" />
+
+    <item android:id="@+id/alu"
+        android:title="ARITHMETIC LOGIC UNIT" />
+
+    <item android:id="@+id/multiplier"
+        android:title="MULTIPLIER" />
+
+    <item android:id="@+id/jkflipflop"
+        android:title="J-K FLIP FLOP" />
+
+    <item android:id="@+id/rammodule"
+        android:title="RAM MODULE" />
+
+    <item android:id="@+id/rommodule"
+        android:title="ROM MODULE" />
+
+    <item android:id="@+id/fir"
+        android:title="FIR DIGITAL FILTER" />
+
+
+</menu>

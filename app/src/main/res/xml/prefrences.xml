@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <PreferenceCategory
+        android:title="Options">
+
+        <CheckBoxPreference
+            android:key="datasheet"
+            android:title="Datasheet Search"
+            android:summary="Search the Datasheet from AllDatasheet.com"
+            android:defaultValue="false"
+            android:disableDependentsState="false"
+            />
+        <CheckBoxPreference
+            android:key="circuit"
+            android:title="Circuit Search"
+            android:summary="Search Circuit from Circuitscout.com"
+            android:defaultValue="false"
+            android:disableDependentsState="false"
+            />
+        <CheckBoxPreference
+            android:key="gis"
+            android:title="GOOGLE SEARCH"
+            android:summary="Refine your Search from Google.com"
+            android:defaultValue="true"
+            android:disableDependentsState="false"
+            />
+        <CheckBoxPreference
+            android:key="circuit1"
+            android:title="Circuit Search 2"
+            android:summary="Search from Circuitfinder.com"
+            android:defaultValue="false"
+            android:disableDependentsState="false"
+            />
+        <CheckBoxPreference
+            android:key="circuit2"
+            android:title="Circuit Search 3"
+            android:summary="Search from electronicsforu.com"
+            android:defaultValue="false"
+            android:disableDependentsState="false"
+            />
+        <CheckBoxPreference
+            android:key="ebc1"
+            android:title="Electronics Basic Concepts"
+            android:summary="Learn Basics of Electrical and Electronics from allaboutcircuits.com"
+            android:defaultValue="false"
+            android:disableDependentsState="false"
+            />
+
+    </PreferenceCategory>
+</PreferenceScreen>

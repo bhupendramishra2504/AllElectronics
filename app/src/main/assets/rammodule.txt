@@ -1,0 +1,449 @@
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.std_logic_arith.all;
+use ieee.std_logic_unsigned.all;
+
+--------------------------------------------------------------
+
+entity SRAM is
+generic(	width:	integer:=4;
+		depth:	integer:=4;
+		addr:	integer:=2);
+port(	Clock:		in std_logic;	
+	Enable:		in std_logic;
+	Read:		in std_logic;
+	Write:		in std_logic;
+	Read_Addr:	in std_logic_vector(addr-1 downto 0);
+	Write_Addr: 	in std_logic_vector(addr-1 downto 0); 
+	Data_in: 	in std_logic_vector(width-1 downto 0);
+	Data_out: 	out std_logic_vector(width-1 downto 0)
+);
+end SRAM;
+
+--------------------------------------------------------------
+
+architecture behav of SRAM is
+
+-- use array to define the bunch of internal temparary signals
+
+type ram_type is array (0 to depth-1) of 
+	std_logic_vector(width-1 downto 0);
+signal tmp_ram: ram_type;
+
+begin	
+			   
+    -- Read Functional Section
+    process(Clock, Read)
+    begin
+	if (Clock'event and Clock='1') then
+	    if Enable='1' then
+		if Read='1' then
+		    -- buildin function conv_integer change the type
+		    -- from std_logic_vector to integer
+		    Data_out <= tmp_ram(conv_integer(Read_Addr)); 
+		else
+		    Data_out <= (Data_out'range => 'Z');
+		end if;
+	    end if;
+	end if;
+    end process;
+	
+    -- Write Functional Section
+    process(Clock, Write)
+    begin
+	if (Clock'event and Clock='1') then
+	    if Enable='1' then
+		if Write='1' then
+		    tmp_ram(conv_integer(Write_Addr)) <= Data_in;
+		end if;
+	    end if;
+	end if;
+    end process;
+
+end behav;
+
+
+TEST BENCH
+
+library IEEE;
+use IEEE.std_logic_1164.all;
+use IEEE.std_logic_arith.all;
+use ieee.std_logic_unsigned.all;
+ 
+entity MEM_TB is 		        -- entity declaration
+end MEM_TB; 
+
+--------------------------------------------------------------------
+ 
+architecture TB of MEM_TB is 
+
+component SRAM is	
+port(	Clock:		in std_logic;	
+	Enable:		in std_logic;
+	Read:		in std_logic;
+	Write:		in std_logic;
+	Read_Addr:	in std_logic_vector(1 downto 0);
+	Write_Addr: 	in std_logic_vector(1 downto 0);			 
+	Data_in: 	in std_logic_vector(3 downto 0);
+	Data_out: 	out std_logic_vector(3 downto 0)
+);	
+end component;
+
+signal T_Clock, T_Enable, T_Read, T_Write: std_logic;
+signal T_Data_in, T_Data_out: std_logic_vector(3 downto 0);
+signal T_Read_Addr: std_logic_vector(1 downto 0);
+signal T_Write_Addr: std_logic_vector(1 downto 0);
+
+begin 
+	
+    U_CKT: SRAM port map (T_Clock, T_Enable, T_Read, T_Write,
+		T_Read_Addr, T_Write_Addr, T_Data_in, T_Data_out);
+
+    Clk_sig: process
+    begin
+        T_Clock<='1';		        -- clock cycle 10 ns
+        wait for 5 ns;
+        T_Clock<='0';
+        wait for 5 ns;
+    end process;
+							
+    process 
+        variable err_cnt: integer := 0;
+    begin
+    	
+	T_Enable <= '1';   
+	T_Read <= '0';
+	T_Write <= '0';
+	T_Write_Addr <= (T_Write_Addr'range => '0');
+	T_Read_Addr <= (T_Read_Addr'range => '0');
+	T_Data_in <= (T_Data_in'range => '0');		
+	wait for 20 ns;
+	
+	-- test write		
+	for i in 0 to 3 loop
+	    T_Write_Addr <= T_Write_Addr + '1';
+	    T_Data_in <= T_Data_in + "10";
+	    T_Write <= '1';
+	    wait for 10 ns;				
+	    assert (T_Data_out="ZZZZ") 
+                report "Something wrong!" severity Error;
+            if (T_Data_out /= "ZZZZ") then
+                err_cnt := err_cnt + 1;
+            end if; 
+	end loop;
+		
+	-- test read
+	for i in 0 to 2 loop
+	    T_Read_Addr <= T_Read_Addr + '1';
+	    T_Read <= '1';
+	    wait for 10 ns;	
+	    assert (conv_integer(T_Data_out)=2*conv_integer(T_Read_Addr))
+		report "Something wrong!" severity Error;
+	    if (conv_integer(T_Data_out)/=2*conv_integer(T_Read_Addr)) then
+		err_cnt := err_cnt + 1;
+	    end if;			  
+	end loop;
+		
+	-- summary of all the tests
+        if (err_cnt=0) then                     
+            assert false 
+            report "Testbench of ROM completed successfully!" 
+            severity note; 
+        else
+            assert true
+            report "Something wrong, try again"
+            severity error;
+        end if;
+
+	wait;
+
+    end process;
+
+end TB;
+
+--------------------------------------------------------------------------
+configuration CFG_TB of MEM_TB is 
+        for TB 
+        end for; 
+end CFG_TB; 
+--------------------------------------------------------------------------
+
+GATE LEVEL IMPLEMENTATION
+
+
+
+library IEEE,LSI_10K;
+
+use IEEE.std_logic_1164.all;
+use IEEE.std_logic_arith.all;
+use LSI_10K.COMPONENTS.all;
+
+package CONV_PACK_SRAM is
+
+-- define attributes
+attribute ENUM_ENCODING : STRING;
+
+end CONV_PACK_SRAM;
+
+library IEEE,LSI_10K;
+
+use IEEE.std_logic_1164.all;
+use IEEE.std_logic_arith.all;
+use LSI_10K.COMPONENTS.all;
+
+use work.CONV_PACK_SRAM.all;
+
+entity SRAM is
+
+   generic( width : Integer := 4; depth : Integer := 4; addr : Integer := 2);
+   port( Clock, Enable, Read, Write : in std_logic;  Read_Addr, Write_Addr : in
+         std_logic_vector (1 downto 0);  Data_in : in std_logic_vector (3 
+         downto 0);  Data_out : out std_logic_vector (3 downto 0));
+
+end SRAM;
+
+architecture SYN of SRAM is
+
+   component BTS4
+      port( A, E : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component FDS2L
+      port( D, CP, CR, LD : in std_logic;  Q, QN : out std_logic);
+   end component;
+   
+   component ND2
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component AN2
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component IV
+      port( A : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component NR2
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component AO2
+      port( A, B, C, D : in std_logic;  Z : out std_logic);
+   end component;
+   
+   signal larray_1_1_port, larray_0_2_port, larray230_3_1_port, 
+      larray230_2_2_port, larray230_2_0_port, larray_0_0_port, 
+      larray230_3_3_port, larray_1_3_port, larray_3_1_port, larray230_1_1_port,
+      Data_out_Q24_0_port, larray230_0_2_port, larray_2_2_port, member90_2_port
+      , member90_0_port, Data_out_Q24_2_port, larray_2_0_port, larray_3_3_port,
+      larray230_0_0_port, larray230_1_3_port, Data_out_Q24_3_port, 
+      larray_2_1_port, larray_3_2_port, larray230_0_1_port, larray230_1_2_port,
+      member90_1_port, n46_3_port, member90_3_port, n185_0_3_port, 
+      larray230_1_0_port, larray_3_0_port, larray230_0_3_port, 
+      Data_out_Q24_1_port, larray_2_3_port, larray230_2_1_port, larray_0_1_port
+      , larray_1_2_port, larray230_3_2_port, larray_1_0_port, larray_0_3_port, 
+      larray230_3_0_port, larray230_2_3_port, n323, n324, n325, n326, n327, 
+      n328, n329, n330, n331, n332, n333, n334, n335, n336, n337, n338, n339, 
+      n340, n341, n342, n343, n344, n345, n346, n347, n348, n349, n350, n351, 
+      n352, n353, n354, n355, n356, n357, n358, n359, n360, n361, n362, n363, 
+      n364, n365, n366, n367, n368, n369, n370, n371, n372, n373, n374, n375, 
+      n376, n377, n378, n379, n380, n381, n382, n383, n384, n385, n386, n387, 
+      n388, n389, n390, n391, n392, n393, n394, n395, n396, n397, n398, n399, 
+      n400, n401, n402, n403, n404, n405, n406, n407, n408, n409, n410, n411, 
+      n412, n413 : std_logic;
+
+begin
+   
+   Data_out_tri_0_label : BTS4 port map( A => Data_out_Q24_0_port, E => n362, Z
+                           => Data_out(0));
+   Data_out_tri_1_label : BTS4 port map( A => Data_out_Q24_1_port, E => n365, Z
+                           => Data_out(1));
+   Data_out_tri_2_label : BTS4 port map( A => Data_out_Q24_2_port, E => n363, Z
+                           => Data_out(2));
+   Data_out_tri_3_label : BTS4 port map( A => Data_out_Q24_3_port, E => n364, Z
+                           => Data_out(3));
+   Data_out_reg_3_label : FDS2L port map( D => member90_3_port, CP => Clock, CR
+                           => n366, LD => Enable, Q => Data_out_Q24_3_port, QN 
+                           => n390);
+   Data_out_reg_2_label : FDS2L port map( D => member90_2_port, CP => Clock, CR
+                           => n367, LD => Enable, Q => Data_out_Q24_2_port, QN 
+                           => n391);
+   Data_out_reg_1_label : FDS2L port map( D => member90_1_port, CP => Clock, CR
+                           => n368, LD => Enable, Q => Data_out_Q24_1_port, QN 
+                           => n392);
+   Data_out_reg_0_label : FDS2L port map( D => member90_0_port, CP => Clock, CR
+                           => n369, LD => Enable, Q => Data_out_Q24_0_port, QN 
+                           => n393);
+   Data_out_tri_enable_reg_3_label : FDS2L port map( D => n46_3_port, CP => 
+                           Clock, CR => n370, LD => Enable, Q => n394, QN => 
+                           n364);
+   Data_out_tri_enable_reg_2_label : FDS2L port map( D => n46_3_port, CP => 
+                           Clock, CR => n371, LD => Enable, Q => n395, QN => 
+                           n363);
+   Data_out_tri_enable_reg_1_label : FDS2L port map( D => n46_3_port, CP => 
+                           Clock, CR => n372, LD => Enable, Q => n396, QN => 
+                           n365);
+   Data_out_tri_enable_reg_0_label : FDS2L port map( D => n46_3_port, CP => 
+                           Clock, CR => n373, LD => Enable, Q => n397, QN => 
+                           n362);
+   tmp_ram_reg_3_0_label : FDS2L port map( D => larray230_3_0_port, CP => Clock
+                           , CR => n374, LD => n185_0_3_port, Q => 
+                           larray_3_0_port, QN => n398);
+   tmp_ram_reg_3_1_label : FDS2L port map( D => larray230_3_1_port, CP => Clock
+                           , CR => n375, LD => n185_0_3_port, Q => 
+                           larray_3_1_port, QN => n399);
+   tmp_ram_reg_3_2_label : FDS2L port map( D => larray230_3_2_port, CP => Clock
+                           , CR => n376, LD => n185_0_3_port, Q => 
+                           larray_3_2_port, QN => n400);
+   tmp_ram_reg_3_3_label : FDS2L port map( D => larray230_3_3_port, CP => Clock
+                           , CR => n377, LD => n185_0_3_port, Q => 
+                           larray_3_3_port, QN => n401);
+   tmp_ram_reg_2_0_label : FDS2L port map( D => larray230_2_0_port, CP => Clock
+                           , CR => n378, LD => n185_0_3_port, Q => 
+                           larray_2_0_port, QN => n402);
+   tmp_ram_reg_2_1_label : FDS2L port map( D => larray230_2_1_port, CP => Clock
+                           , CR => n379, LD => n185_0_3_port, Q => 
+                           larray_2_1_port, QN => n403);
+   tmp_ram_reg_2_2_label : FDS2L port map( D => larray230_2_2_port, CP => Clock
+                           , CR => n380, LD => n185_0_3_port, Q => 
+                           larray_2_2_port, QN => n404);
+   tmp_ram_reg_2_3_label : FDS2L port map( D => larray230_2_3_port, CP => Clock
+                           , CR => n381, LD => n185_0_3_port, Q => 
+                           larray_2_3_port, QN => n405);
+   tmp_ram_reg_1_0_label : FDS2L port map( D => larray230_1_0_port, CP => Clock
+                           , CR => n382, LD => n185_0_3_port, Q => 
+                           larray_1_0_port, QN => n406);
+   tmp_ram_reg_1_1_label : FDS2L port map( D => larray230_1_1_port, CP => Clock
+                           , CR => n383, LD => n185_0_3_port, Q => 
+                           larray_1_1_port, QN => n407);
+   tmp_ram_reg_1_2_label : FDS2L port map( D => larray230_1_2_port, CP => Clock
+                           , CR => n384, LD => n185_0_3_port, Q => 
+                           larray_1_2_port, QN => n408);
+   tmp_ram_reg_1_3_label : FDS2L port map( D => larray230_1_3_port, CP => Clock
+                           , CR => n385, LD => n185_0_3_port, Q => 
+                           larray_1_3_port, QN => n409);
+   tmp_ram_reg_0_0_label : FDS2L port map( D => larray230_0_0_port, CP => Clock
+                           , CR => n386, LD => n185_0_3_port, Q => 
+                           larray_0_0_port, QN => n410);
+   tmp_ram_reg_0_1_label : FDS2L port map( D => larray230_0_1_port, CP => Clock
+                           , CR => n387, LD => n185_0_3_port, Q => 
+                           larray_0_1_port, QN => n411);
+   tmp_ram_reg_0_2_label : FDS2L port map( D => larray230_0_2_port, CP => Clock
+                           , CR => n388, LD => n185_0_3_port, Q => 
+                           larray_0_2_port, QN => n412);
+   tmp_ram_reg_0_3_label : FDS2L port map( D => larray230_0_3_port, CP => Clock
+                           , CR => n389, LD => n185_0_3_port, Q => 
+                           larray_0_3_port, QN => n413);
+   U67 : ND2 port map( A => n323, B => n324, Z => member90_3_port);
+   U68 : ND2 port map( A => n325, B => n326, Z => member90_2_port);
+   U69 : ND2 port map( A => n327, B => n328, Z => member90_1_port);
+   U70 : ND2 port map( A => n329, B => n330, Z => member90_0_port);
+   U71 : AN2 port map( A => Write, B => Enable, Z => n185_0_3_port);
+   U72 : IV port map( A => Read, Z => n46_3_port);
+   U73 : NR2 port map( A => Read_Addr(1), B => Read_Addr(0), Z => n331);
+   U74 : IV port map( A => Read_Addr(1), Z => n332);
+   U75 : NR2 port map( A => n332, B => Read_Addr(0), Z => n333);
+   U76 : IV port map( A => Read_Addr(0), Z => n334);
+   U77 : NR2 port map( A => n334, B => Read_Addr(1), Z => n335);
+   U78 : NR2 port map( A => n334, B => n332, Z => n336);
+   U79 : IV port map( A => Write_Addr(0), Z => n337);
+   U80 : AO2 port map( A => larray_3_3_port, B => n339, C => Data_in(3), D => 
+                           n340, Z => n338);
+   U81 : AO2 port map( A => larray_3_2_port, B => n339, C => Data_in(2), D => 
+                           n340, Z => n341);
+   U82 : AO2 port map( A => larray_3_1_port, B => n339, C => Data_in(1), D => 
+                           n340, Z => n342);
+   U83 : AO2 port map( A => larray_3_0_port, B => n339, C => Data_in(0), D => 
+                           n340, Z => n343);
+   U84 : AO2 port map( A => larray_2_3_port, B => n345, C => Data_in(3), D => 
+                           n346, Z => n344);
+   U85 : AO2 port map( A => larray_2_2_port, B => n345, C => Data_in(2), D => 
+                           n346, Z => n347);
+   U86 : AO2 port map( A => larray_2_1_port, B => n345, C => Data_in(1), D => 
+                           n346, Z => n348);
+   U87 : AO2 port map( A => larray_2_0_port, B => n345, C => Data_in(0), D => 
+                           n346, Z => n349);
+   U88 : AO2 port map( A => larray_1_3_port, B => n351, C => Data_in(3), D => 
+                           n352, Z => n350);
+   U89 : AO2 port map( A => larray_1_2_port, B => n351, C => Data_in(2), D => 
+                           n352, Z => n353);
+   U90 : AO2 port map( A => larray_1_1_port, B => n351, C => Data_in(1), D => 
+                           n352, Z => n354);
+   U91 : AO2 port map( A => larray_1_0_port, B => n351, C => Data_in(0), D => 
+                           n352, Z => n355);
+   U92 : AO2 port map( A => larray_0_3_port, B => n357, C => Data_in(3), D => 
+                           n358, Z => n356);
+   U93 : AO2 port map( A => larray_0_2_port, B => n357, C => Data_in(2), D => 
+                           n358, Z => n359);
+   U94 : AO2 port map( A => larray_0_1_port, B => n357, C => Data_in(1), D => 
+                           n358, Z => n360);
+   U95 : AO2 port map( A => larray_0_0_port, B => n357, C => Data_in(0), D => 
+                           n358, Z => n361);
+   U96 : AO2 port map( A => larray_0_3_port, B => n331, C => larray_2_3_port, D
+                           => n333, Z => n324);
+   U97 : AO2 port map( A => larray_1_3_port, B => n335, C => larray_3_3_port, D
+                           => n336, Z => n323);
+   U98 : AO2 port map( A => larray_0_2_port, B => n331, C => larray_2_2_port, D
+                           => n333, Z => n326);
+   U99 : AO2 port map( A => larray_1_2_port, B => n335, C => larray_3_2_port, D
+                           => n336, Z => n325);
+   U100 : AO2 port map( A => larray_0_1_port, B => n331, C => larray_2_1_port, 
+                           D => n333, Z => n328);
+   U101 : AO2 port map( A => larray_1_1_port, B => n335, C => larray_3_1_port, 
+                           D => n336, Z => n327);
+   U102 : AO2 port map( A => larray_0_0_port, B => n331, C => larray_2_0_port, 
+                           D => n333, Z => n330);
+   U103 : AO2 port map( A => larray_1_0_port, B => n335, C => larray_3_0_port, 
+                           D => n336, Z => n329);
+   U104 : NR2 port map( A => Write_Addr(1), B => Write_Addr(0), Z => n358);
+   U105 : NR2 port map( A => n337, B => Write_Addr(1), Z => n352);
+   U106 : ND2 port map( A => Write_Addr(1), B => n337, Z => n345);
+   U107 : ND2 port map( A => Write_Addr(0), B => Write_Addr(1), Z => n339);
+   U108 : IV port map( A => n339, Z => n340);
+   U109 : IV port map( A => n345, Z => n346);
+   U110 : IV port map( A => n352, Z => n351);
+   U111 : IV port map( A => n358, Z => n357);
+   U112 : IV port map( A => n338, Z => larray230_3_3_port);
+   U113 : IV port map( A => n341, Z => larray230_3_2_port);
+   U114 : IV port map( A => n342, Z => larray230_3_1_port);
+   U115 : IV port map( A => n343, Z => larray230_3_0_port);
+   U116 : IV port map( A => n344, Z => larray230_2_3_port);
+   U117 : IV port map( A => n347, Z => larray230_2_2_port);
+   U118 : IV port map( A => n348, Z => larray230_2_1_port);
+   U119 : IV port map( A => n349, Z => larray230_2_0_port);
+   U120 : IV port map( A => n350, Z => larray230_1_3_port);
+   U121 : IV port map( A => n353, Z => larray230_1_2_port);
+   U122 : IV port map( A => n354, Z => larray230_1_1_port);
+   U123 : IV port map( A => n355, Z => larray230_1_0_port);
+   U124 : IV port map( A => n356, Z => larray230_0_3_port);
+   U125 : IV port map( A => n359, Z => larray230_0_2_port);
+   U126 : IV port map( A => n360, Z => larray230_0_1_port);
+   U127 : IV port map( A => n361, Z => larray230_0_0_port);
+   n366 <= '1';
+   n367 <= '1';
+   n368 <= '1';
+   n369 <= '1';
+   n370 <= '1';
+   n371 <= '1';
+   n372 <= '1';
+   n373 <= '1';
+   n374 <= '1';
+   n375 <= '1';
+   n376 <= '1';
+   n377 <= '1';
+   n378 <= '1';
+   n379 <= '1';
+   n380 <= '1';
+   n381 <= '1';
+   n382 <= '1';
+   n383 <= '1';
+   n384 <= '1';
+   n385 <= '1';
+   n386 <= '1';
+   n387 <= '1';
+   n388 <= '1';
+   n389 <= '1';
+
+end SYN;
+

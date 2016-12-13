@@ -1,0 +1,89 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:id="@+id/scrollView1"
+    android:background="#0087BD"
+    android:fillViewport="true"
+    android:layout_height="wrap_content"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    android:paddingBottom="16dp">
+    <LinearLayout
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:orientation="vertical"
+        tools:context="com.mlmishra.bhupendramishra.allelectronics.Controller_program"
+        android:weightSum="1"
+        android:paddingTop="@dimen/activity_vertical_margin"
+        android:paddingBottom="16dp">
+
+        <TextView
+            android:text="VHDL PROGRAMMING "
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/vtv"
+            android:layout_weight="0.08"
+            android:textColor="#ffffff"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="10dp"/>
+
+        <Button
+            style="?android:attr/buttonStyleSmall"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Select Options"
+            android:textColor="#ffffff"
+            android:id="@+id/vbuttonp3"
+            android:background="@drawable/allborder"
+            android:layout_gravity="center_horizontal"
+            />
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/vimageview"
+
+            />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/vtv1"
+            android:layout_weight="0.08"
+            android:textSize="15sp"
+            android:textColor="#ffffff"
+            android:textStyle="bold"/>
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/vimageview1"
+
+            />
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/vimageview2"
+
+            />
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/vimageview3"
+
+            />
+
+        <Button
+            style="?android:attr/buttonStyleSmall"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="SAVE CODE IN LIBRARY"
+            android:textColor="#ffffff"
+            android:id="@+id/vb1"
+            android:background="@drawable/allborder"
+            android:layout_gravity="center_horizontal"
+            />
+
+    </LinearLayout>
+</ScrollView>

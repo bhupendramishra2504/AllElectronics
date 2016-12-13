@@ -1,0 +1,284 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:id="@+id/scrollView1"
+    android:background="#0087BD"
+    android:fillViewport="true"
+    android:layout_height="wrap_content"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    android:paddingBottom="16dp">
+    <LinearLayout
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:orientation="vertical"
+        tools:context="com.mlmishra.bhupendramishra.allelectronics.Calculator"
+        android:weightSum="1">
+
+        <TextView
+            android:text="ELECTRONICS CALCULATOR "
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/ctv"
+            android:textColor="#ffffff"
+            android:layout_weight="0.08"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="10dp"/>
+
+        <Button
+            style="?android:attr/buttonStyleSmall"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Select Options"
+            android:textColor="#ffffff"
+            android:id="@+id/cb1"
+            android:background="@drawable/allborder"
+            android:layout_gravity="center_horizontal"
+            />
+
+    <LinearLayout
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:orientation="horizontal"
+        android:gravity="center"
+        >
+        <CheckBox
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/ccb1"
+            android:checked="false"
+            android:textColor="#ffffff"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:id="@+id/ctv1"
+            android:layout_weight="0.02"
+            android:textColor="#ffffff"
+            android:textSize="15sp"
+            android:textStyle="bold"/>
+
+        <EditText
+            android:layout_width="70dp"
+            android:layout_height="wrap_content"
+            android:id="@+id/cet1"
+            android:inputType="numberDecimal"
+            android:singleLine="true"
+            android:textColor="#ffffff"
+            />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            android:orientation="horizontal"
+            >
+            <CheckBox
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/ccb2"
+                android:checked="false"
+                android:textColor="#ffffff"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:id="@+id/ctv2"
+                android:layout_weight="0.04"
+                android:textSize="15sp"
+                android:textColor="#ffffff"
+                android:textStyle="bold"/>
+
+
+            <EditText
+                android:layout_width="70dp"
+                android:layout_height="wrap_content"
+                android:id="@+id/cet2"
+                android:inputType="numberDecimal"
+                android:imeOptions="actionDone"
+                android:singleLine="true"
+                android:textColor="#ffffff"
+                />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            android:orientation="horizontal"
+            >
+            <CheckBox
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/ccb3"
+                android:checked="false"
+                android:textColor="#ffffff"/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:id="@+id/ctv3"
+                android:layout_weight="0.08"
+                android:textSize="15sp"
+                android:textColor="#ffffff"
+                android:textStyle="bold"/>
+
+
+            <EditText
+                android:layout_width="70dp"
+                android:layout_height="wrap_content"
+                android:id="@+id/cet3"
+                android:inputType="numberDecimal"
+                android:textColor="#ffffff"
+                android:imeOptions="actionDone"
+                android:singleLine="true"
+                />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            android:orientation="horizontal"
+            >
+            <CheckBox
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/ccb4"
+                android:checked="false"
+                android:textColor="#ffffff"/>
+
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:id="@+id/ctv4"
+                android:layout_weight="0.08"
+                android:textSize="15sp"
+                android:textColor="#ffffff"
+                android:textStyle="bold"/>
+
+            <EditText
+                android:layout_width="70dp"
+                android:layout_height="wrap_content"
+                android:id="@+id/cet4"
+                android:inputType="numberDecimal"
+                android:imeOptions="actionDone"
+                android:singleLine="true"
+                android:textColor="#ffffff"
+                />
+        </LinearLayout>
+        <LinearLayout
+            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            android:orientation="horizontal"
+            >
+            <CheckBox
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/ccb5"
+                android:checked="false"
+                android:textColor="#ffffff"/>
+
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:id="@+id/ctv5"
+                android:layout_weight="0.08"
+                android:textSize="15sp"
+                android:textColor="#ffffff"
+                android:textStyle="bold"/>
+
+            <EditText
+                android:layout_width="70dp"
+                android:layout_height="wrap_content"
+                android:id="@+id/cet5"
+                android:inputType="numberDecimal"
+                android:imeOptions="actionDone"
+                android:singleLine="true"
+                android:textColor="#ffffff"
+                />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            android:orientation="horizontal"
+            >
+            <CheckBox
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/ccb6"
+                android:checked="false"
+                android:textColor="#ffffff"/>
+
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:id="@+id/ctv8"
+                android:layout_weight="0.08"
+                android:textColor="#ffffff"
+                android:textSize="15sp"
+                android:textStyle="bold"/>
+
+            <EditText
+                android:layout_width="70dp"
+                android:layout_height="wrap_content"
+                android:id="@+id/cet6"
+                android:inputType="numberDecimal"
+                android:imeOptions="actionDone"
+                android:singleLine="true"
+                android:textColor="#ffffff"
+                />
+        </LinearLayout>
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="250dp"
+            android:id="@+id/cimageview"
+            />
+
+        <Button
+            style="?android:attr/buttonStyleSmall"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="CALCULATE"
+            android:background="@drawable/allborder"
+            android:id="@+id/cb2"
+            android:layout_gravity="center_horizontal"
+            android:textColor="#ffffff"
+            />
+
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/ctv6"
+            android:text="RESULT : "
+            android:textSize="15sp"
+            android:textColor="#ffffff"
+            android:textStyle="bold"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/ctv7"
+            android:text="CALCULATION"
+            android:textColor="#ffffff"
+            android:textSize="15sp"
+            android:textStyle="bold"/>
+
+        <Button
+            style="?android:attr/buttonStyleSmall"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="SAVE CALCULATION"
+            android:background="@drawable/allborder"
+            android:id="@+id/cb3"
+            android:textColor="#ffffff"
+            android:layout_gravity="center_horizontal"
+            />
+
+    </LinearLayout>
+</ScrollView>

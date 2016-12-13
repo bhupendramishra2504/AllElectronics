@@ -1,0 +1,79 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:id="@+id/search_layout"
+    android:background="#ffffff"
+    android:fillViewport="true"
+    android:layout_height="match_parent"
+    tools:context="com.mlmishra.bhupendramishra.allelectronics.Controller_program"
+    android:fadeScrollbars="false">
+
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="30dp"
+            android:text="ALLELECTRONICS"
+            android:textColor="#0087BD"
+            android:textSize="30sp"
+            android:textStyle="bold"/>
+
+
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/editText"
+        android:inputType="text"
+        android:hint="Search your query here"
+        android:imeOptions="actionDone"
+        android:singleLine="true"
+        android:paddingLeft="18dp"
+        android:paddingRight="18dp"
+
+       />
+
+
+
+    <LinearLayout
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:orientation="horizontal"
+        android:gravity="center_horizontal"
+        android:layout_marginBottom="30dp"
+        >
+
+        <ImageButton
+
+            android:layout_width="0dp"
+            android:layout_weight="0.5"
+            android:layout_height="30dp"
+            android:id="@+id/button"
+            android:scaleType="fitCenter"
+            android:src="@drawable/searchi"
+            android:text="Search"
+            android:background="@null"
+            />
+
+        <ImageButton
+            android:layout_width="0dp"
+            android:layout_weight="0.5"
+            android:layout_height="30dp"
+            android:src="@drawable/optioni"
+            android:scaleType="fitCenter"
+            android:id="@+id/button2"
+            android:background="@null"
+            />
+
+
+        </LinearLayout>
+
+</LinearLayout>
+
+
+
+</ScrollView>

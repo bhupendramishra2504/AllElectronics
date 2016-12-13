@@ -1,0 +1,44 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.mlmishra.bhupendramishra.allelectronics.Calculator">
+    <item android:id="@+id/action_settings" android:title=""
+        android:orderInCategory="100" app:showAsAction="never" />
+    <item android:id="@+id/rseries"
+        android:title="RESISTANCE IN SERIES" />
+
+    <item android:id="@+id/rparallel"
+        android:title="RESISTANCE IN PARALLEL" />
+
+    <item android:id="@+id/cseries"
+        android:title="CAPACITANCE IN SERIES" />
+
+    <item android:id="@+id/cparallel"
+        android:title="CAPACITANCE IN PARALLEL" />
+
+    <item android:id="@+id/ohm"
+        android:title="OHM's LAW" />
+
+    <item android:id="@+id/vdivider"
+        android:title="VOLTAGE DIVIDER" />
+
+    <item android:id="@+id/ledcal"
+        android:title="LED RESISTANCE CALCULATION" />
+
+    <item android:id="@+id/rdiode"
+        android:title="DIODE AND RESISTANCE" />
+
+    <item android:id="@+id/transistor"
+        android:title="TRANSISTOR AS AN AMPLIFIER" />
+
+    <item android:id="@+id/opampinv"
+        android:title="OP-AMP INVERTER CIRCUIT" />
+
+    <item android:id="@+id/opampninv"
+        android:title="OP-AMP NON-INVERTER CIRCUIT" />
+
+    <item android:id="@+id/opamplpf"
+        android:title="OP-AMP LOW PASS FILTER" />
+
+
+</menu>

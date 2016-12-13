@@ -1,0 +1,118 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:id="@+id/search_layout"
+    android:background="#0087BD"
+    android:fillViewport="true"
+    android:layout_height="match_parent"
+    tools:context="com.mlmishra.bhupendramishra.allelectronics.Controller_program"
+    android:fadeScrollbars="false">
+
+    <LinearLayout
+        android:layout_height="match_parent"
+        android:layout_width="match_parent"
+        android:orientation="vertical"
+        android:layout_gravity="right|center_horizontal"
+        >
+        <LinearLayout
+            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            android:orientation="vertical"
+            android:gravity="right"
+
+            >
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="right"
+                android:id="@+id/spsigned"
+                android:paddingLeft="8dp"
+                android:paddingRight="8dp"
+                android:textColor="#ffffff"
+                android:background="@null"
+
+                />
+        </LinearLayout>
+
+
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="30dp"
+            android:text="Submit Project"
+            android:textColor="#ffffff"
+            android:textStyle="bold"/>
+
+        <LinearLayout
+            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            android:orientation="vertical"
+            android:gravity="top|left"
+            android:layout_marginTop="30dp"
+
+
+            >
+            <EditText
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/sptitle"
+                android:inputType="text"
+                android:hint="Enter title"
+                android:textCursorDrawable="@null"
+                android:textColor="#ffffff"
+                android:imeOptions="actionDone"
+                android:singleLine="true"
+                android:paddingLeft="18dp"
+                android:paddingRight="18dp"
+                android:layout_marginBottom="15dp"
+
+                />
+
+            <EditText
+                android:layout_width="match_parent"
+                android:layout_height="200dp"
+                android:id="@+id/spdesc"
+                android:inputType="textMultiLine"
+                android:textCursorDrawable="@null"
+                android:layout_gravity="left|start"
+                android:hint="Enter Project Desc"
+                android:textColor="#ffffff"
+                android:imeOptions="actionDone"
+                android:scrollbars = "vertical"
+                android:background="@drawable/allborder"
+                android:layout_marginBottom="15dp"
+               
+                />
+
+
+            <CheckBox
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/offer"
+                android:checked="false"
+                android:text="select for free offer"
+                android:textColor="#ffffff"/>
+
+
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Submit"
+                android:textSize="20sp"
+                android:layout_gravity="center"
+                android:id="@+id/spsubmit"
+                android:paddingLeft="8dp"
+                android:paddingRight="8dp"
+                android:textColor="#ffffff"
+                android:background="@drawable/allborder"
+                />
+
+
+        </LinearLayout>
+
+
+
+    </LinearLayout>
+</ScrollView>

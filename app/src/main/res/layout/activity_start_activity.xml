@@ -1,0 +1,208 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:id="@+id/search_layout"
+    android:background="#ffffff"
+    android:fillViewport="true"
+    android:layout_height="match_parent"
+
+    tools:context="com.mlmishra.bhupendramishra.allelectronics.Controller_program"
+    android:fadeScrollbars="false">
+
+    <LinearLayout
+        android:layout_height="match_parent"
+        android:layout_width="match_parent"
+        android:orientation="vertical"
+        android:layout_gravity="right|center_horizontal"
+        >
+        <LinearLayout
+            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            android:orientation="vertical"
+            android:gravity="right"
+            android:background="@drawable/bottomborder"
+            >
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Login/Signup"
+                android:drawablePadding="5dp"
+                android:drawableLeft="@drawable/cust"
+                android:layout_gravity="right"
+                android:id="@+id/login"
+                android:paddingLeft="8dp"
+                android:paddingRight="8dp"
+                android:textColor="#0087BD"
+                android:background="@drawable/allborder"
+                />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            android:orientation="horizontal"
+            android:gravity="left"
+
+            >
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="120dp"
+                android:layout_gravity="center_horizontal"
+                android:id="@+id/offer"
+                android:text="Offers"
+                android:textColor="#ffffff"
+                android:paddingLeft="8dp"
+                android:paddingRight="8dp"
+                android:background="@drawable/fillallbottomborder"
+
+               />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            android:orientation="vertical"
+            android:layout_gravity="left|center_horizontal"
+            android:layout_marginBottom="10dp"
+            android:paddingBottom="10dp"
+            android:background="@drawable/topborder"
+
+            >
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:id="@+id/alert"
+                android:text="Login to access all features like microcontroller programming, raspberry pi programming, PLC programming, neural networks, your personal library and many more ........."
+                android:textColor="#0087BD"
+                android:paddingLeft="8dp"
+                android:paddingRight="8dp"
+
+                />
+
+            <Button
+                android:id="@+id/ssearch"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:layout_marginTop="20dp"
+                android:text="Search"
+                android:background="@drawable/buttonshape"
+                android:gravity="left|center_vertical"
+                android:textSize="15sp"
+                android:drawablePadding="5dp"
+                android:drawableLeft="@drawable/search"
+                android:textColor="#ffffff"
+                android:paddingLeft="10dp"
+                android:paddingRight="20dp"
+                android:layout_marginLeft="20dp"
+                android:layout_marginRight="20dp"
+
+                />
+            
+            <Button
+                android:id="@+id/smenu1"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:layout_marginTop="20dp"
+                android:gravity="left|center_vertical"
+                android:text="Menu"
+                android:textSize="15sp"
+                android:drawablePadding="5dp"
+                android:drawableLeft="@drawable/menu"
+                android:background="@drawable/buttonshape"
+                android:textColor="#ffffff"
+                android:paddingLeft="20dp"
+                android:paddingRight="20dp"
+                android:layout_marginLeft="20dp"
+                android:layout_marginRight="20dp"
+
+                />
+
+            <Button
+                android:id="@+id/slibrary"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:layout_marginTop="20dp"
+                android:text="Library"
+                android:background="@drawable/buttonshape"
+                android:gravity="left|center_vertical"
+                android:textSize="15sp"
+                android:drawablePadding="5dp"
+                android:drawableLeft="@drawable/library"
+                android:textColor="#ffffff"
+                android:paddingLeft="20dp"
+                android:paddingRight="20dp"
+                android:layout_marginLeft="20dp"
+                android:layout_marginRight="20dp"/>
+
+
+            <Button
+                android:id="@+id/ssubmitpro"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:layout_marginTop="20dp"
+                android:text="MY PROJECTS"
+                android:background="@drawable/buttonshape"
+                android:gravity="left|center_vertical"
+                android:textSize="15sp"
+                android:drawablePadding="5dp"
+                android:drawableLeft="@drawable/project"
+                android:textColor="#ffffff"
+                android:paddingLeft="20dp"
+                android:paddingRight="20dp"
+                android:layout_marginLeft="20dp"
+                android:layout_marginRight="20dp"/>
+
+
+
+
+
+            <Button
+                android:id="@+id/saboutus"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:layout_marginTop="20dp"
+                android:text="About Us"
+                android:gravity="left|center_vertical"
+                android:textSize="15sp"
+                android:drawablePadding="5dp"
+                android:drawableLeft="@drawable/aboutus"
+                android:background="@drawable/buttonshape"
+                android:textColor="#ffffff"
+                android:paddingLeft="20dp"
+                android:paddingRight="20dp"
+                android:layout_marginLeft="20dp"
+                android:layout_marginRight="20dp"/>
+
+
+
+
+
+
+
+
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:background="@drawable/topborder"
+
+            >
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:textSize="18sp"
+                android:id="@+id/version"
+                android:textColor="#0087BD"
+                android:paddingTop="20dp"
+                />
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="adobe_products">
+        <item>MY LIBRARY</item>
+        <item>ELECTRONICS CALCULATOR</item>
+        <item>MICROCONTROLLER PROGRAMMING</item>
+        <item>PLC PROGRAMMING</item>
+        <item>NEURAL NETWORK</item>
+        <item>VHDL CODES</item>
+        <item>RASPBERRY PI CODES</item>
+        <item>BLUETOOTH TERMINAL</item>
+        <item>CONNECTORS INFO</item>
+        <item>BLOG</item>
+
+
+
+
+    </string-array>
+</resources>

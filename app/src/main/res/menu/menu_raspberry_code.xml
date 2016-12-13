@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+    <!-- Single menu_ladder item
+         Set id, icon and Title for each menu_ladder item
+    -->
+    <item android:id="@+id/getstarted"
+        android:title="GET STARTED" />
+
+    <item android:id="@+id/paloutput"
+        android:title="FORCING PAL COMPOSITE O/P" />
+
+    <item android:id="@+id/vncserver"
+        android:title="REMOTELY ACCESSING YOUR RASPBERRY PI " />
+
+    <item android:id="@+id/networksetting"
+        android:title="NETWORK SETTINGS" />
+
+    <item android:id="@+id/homesecurity"
+        android:title="HOME SECURITY SYSTEM" />
+
+    <item android:id="@+id/webserver"
+        android:title="Raspberry Pi WEB SERVER" />
+
+    <item android:id="@+id/wordpress"
+        android:title="Raspberry Pi WORDPRESS WEB SERVER" />
+
+
+    <item android:id="@+id/extras"
+        android:title="MORE COMING SOON...." />
+
+
+</menu>

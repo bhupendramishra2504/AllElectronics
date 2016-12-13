@@ -1,0 +1,2378 @@
+library IEEE;				-- declare the library
+use IEEE.std_logic_1164.all;
+use IEEE.std_logic_arith.all;
+
+---------------------------------------------------------------
+
+entity FIR_filter is
+port(	rst:		in	std_logic;
+	clk:		in	std_logic;
+	coef_ld:	in	std_logic;
+	start:		in	std_logic;
+	o_enable:	in	std_logic;
+	bypass:		in	std_logic;
+	Xn_in:		in 	std_logic_vector(3 downto 0);
+	Yn_in:		in	std_logic_vector(15 downto 0);
+	Xn_out:		out	std_logic_vector(3 downto 0);
+	Yn_out:		out	std_logic_vector(15 downto 0)
+);
+end FIR_filter;
+
+architecture BEH of FIR_filter is
+
+    constant K:	integer := 4;		-- circuit has four stages
+	
+    -- use type and subtype to define the complex signals
+
+    subtype bit4 is	std_logic_vector(3 downto 0);
+    subtype bit8 is	std_logic_vector(7 downto 0);
+    subtype bit16 is	std_logic_vector(15 downto 0);
+	
+    type klx4	is	array (K downto 0) of bit4;		
+    type kx8	is	array (K-1 downto 0) of bit8;
+    type klx8	is      array (K downto 0) of bit8;
+    type kx16	is	array (K-1 downto 0) of bit16;
+    type klx16	is	array (K downto 0) of bit16;
+	
+    -- define signal in type of arrays 
+    signal	REG1, REG2, COEF	: klx4;
+    signal	MULT8			: kx8;
+    signal	MULT16			: kx16;
+    signal	SUM			: klx16;
+    signal	Xn_tmp			: bit4;
+    signal	Yn_tmp			: bit16;
+	
+begin
+	
+    -- initialize the first stage
+of FIR circuit
+
+    REG2(K)	<= Xn_in when (start='1')
+			 else (REG2(K)'range => '0');
+    REG1(K) 	<= (REG1(K)'range => '0');			 
+    SUM(K)  	<= Yn_in;
+    COEF(K) 	<= Xn_in;
+	
+    -- start the computation, use generate to obtain the  
+    -- multiple stages
+
+    gen8:	for j in K-1 downto 0 generate
+	
+        stages:	process (rst, clk)
+        begin
+        
+            if (rst='0') then
+	        REG1(j) <= (REG1(j)'range => '0');
+	        REG2(j) <= (REG2(j)'range => '0');
+	        COEF(j) <= (COEF(j)'range => '0');
+	        MULT16(j) <= (MULT16(j)'range => '0');
+	        SUM(j) <= (SUM(j)'range => '0');
+	    elsif (clk'event and clk ='1') then
+	        REG1(j) <= REG2(j+1);
+	        REG2(j) <= REG1(j);
+	        if (coef_ld = '1') then
+	            COEF(j) <= COEF(j+1);
+   	        end if;
+                MULT8(j) <= signed(REG1(j))*signed(COEF(j));
+	        MULT16(j)(7 downto 0) <= MULT8(j);	   
+	        if (MULT8(j)(7)='0') then
+	            MULT16(j)(15 downto 8) <= "00000000";
+	        else
+	            MULT16(j)(15 downto 8)  <=  "11111111";
+	        end if;
+	        SUM(j) <= signed(MULT16(j))+signed(SUM(j+1));
+	    end if;
+			
+        end process;
+		
+    end generate;
+	
+    -- control the outputs by concurrent statements
+
+    Xn_tmp <= 	Xn_in	when bypass = '1' else
+			REG2(0) when coef_ld = '0' else
+			COEF(0);
+			
+    Yn_tmp <= 	Yn_in	when bypass = '1' else
+			SUM(0);
+		
+    Xn_out <= 	Xn_tmp	when o_enable = '0' else
+			(Xn_out'range => 'Z');
+		
+    Yn_out <= 	Yn_tmp	when o_enable = '0' else
+			(Yn_out'range => 'Z');			  
+	
+end BEH;
+
+
+TEST BENCH
+
+library ieee;
+use ieee.std_logic_1164.all;  
+use ieee.std_logic_arith.all;	   
+use ieee.std_logic_unsigned.all;
+
+entity FIR_TB is
+end FIR_TB;
+
+--------------------------------------------------------------------------
+
+architecture TB of FIR_TB is
+
+    signal T_rst, T_clk: 	std_logic;
+    signal T_coef_ld:		std_logic;
+    signal T_start:		std_logic;
+    signal T_o_enable:		std_logic; 
+    signal T_bypass:		std_logic;
+    signal T_Xn_in:		std_logic_vector(3 downto 0);
+    signal T_Yn_in:		std_logic_vector(15 downto 0);
+    signal T_Xn_out:		std_logic_vector(3 downto 0);
+    signal T_Yn_out:		std_logic_vector(15 downto 0);
+	
+    component FIR_filter is
+    port(	rst:		in	std_logic;
+		clk:		in	std_logic;
+		coef_ld:	in	std_logic;
+		start:		in	std_logic;
+		o_enable:	in	std_logic;
+		bypass:		in	std_logic;
+		Xn_in:		in 	std_logic_vector(3 downto 0);
+		Yn_in:		in	std_logic_vector(15 downto 0);
+		Xn_out:		out	std_logic_vector(3 downto 0);
+		Yn_out:		out	std_logic_vector(15 downto 0)
+    );
+    end component;
+		
+    begin
+    
+    Unit: FIR_filter port map (	T_rst, T_clk, T_coef_ld, T_start, 
+				T_o_enable, T_bypass, T_Xn_in, 
+				T_Yn_in, T_Xn_out, T_Yn_out);
+	
+    process
+    begin
+	T_clk <= '0';				-- offer clock signal
+	wait for 5 ns;				-- in cocurrent process
+	T_clk <= '1';
+	wait for 5 ns;
+    end process;
+	
+    process
+    begin
+		
+	T_rst <= '0';				-- initialization
+	T_coef_ld <= '0';
+	T_start <= '0';
+	T_o_enable <= '0';
+	T_bypass <= '0';
+	T_Xn_in <= "0000";
+	T_Yn_in <= "0000000000000000";
+	wait for 20 ns;
+		
+	T_rst <= '1';				-- reset the circuit
+	wait for 20 ns;
+		
+	T_coef_ld <= '1';			-- load 4 coeficients
+	T_Xn_in <= "0001";
+	wait for 40 ns;
+		
+	T_coef_ld <= '0';
+	T_Xn_in <= "0000";
+	wait for 20 ns;
+		
+	T_start <= '1';	 			-- start computation
+	wait for 20 ns;
+	T_Xn_in <= "0001";
+				
+	for i in 0 to 14 loop			-- feed different inputs
+	    wait for 10 ns;
+	    T_Xn_in <= T_Xn_in + '1';	   
+	end loop;
+		
+	wait for 20 ns;				-- output high resistance
+	T_o_enable <= '1';
+		
+	wait for 40 ns;		
+	T_o_enable <= '0';
+		
+	wait for 20 ns;				-- bypass the circuit
+	T_bypass <= '1';
+		
+	wait;
+
+    end process;
+
+end TB;
+
+---------------------------------------------------------------------------
+
+configuration CFG_TB of FIR_TB is
+	for TB
+	end for;
+end CFG_TB;
+
+
+GATE LEVEL IMPLEMENTATION
+
+library IEEE,lsi_10k;
+
+use IEEE.std_logic_1164.all;
+use IEEE.std_logic_arith.all;
+use IEEE.std_logic_textio.all;
+use lsi_10k.COMPONENTS.all;
+
+package CONV_PACK_FIR_filter is
+
+-- define attributes
+attribute ENUM_ENCODING : STRING;
+
+end CONV_PACK_FIR_filter;
+
+library IEEE,lsi_10k;
+
+use IEEE.std_logic_1164.all;
+use IEEE.std_logic_arith.all;
+use IEEE.std_logic_textio.all;
+use lsi_10k.COMPONENTS.all;
+
+use work.CONV_PACK_FIR_filter.all;
+
+entity FIR_filter_DW01_add_6_3 is
+
+   port( A, B : in std_logic_vector (0 to 5);  CI : in std_logic;  SUM : out 
+         std_logic_vector (0 to 5);  CO : out std_logic);
+
+end FIR_filter_DW01_add_6_3;
+
+architecture SYN of FIR_filter_DW01_add_6_3 is
+
+   component AO6
+      port( A, B, C : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component AO7
+      port( A, B, C : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component NR2
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component EN
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component IV
+      port( A : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component AO5
+      port( A, B, C : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component EO
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component ND2
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   signal SUM_2_port, SUM_4_port, SUM_5_port, SUM_3_port, n49, n50, n51, n52, 
+      n53, n54, n55, n56, n57, n58, n59 : std_logic;
+
+begin
+   SUM <= ( SUM_5_port, SUM_4_port, SUM_3_port, SUM_2_port, A(4), A(5) );
+   
+   U5 : AO6 port map( A => n49, B => n50, C => n51, Z => SUM_2_port);
+   U6 : AO7 port map( A => n53, B => n54, C => n55, Z => n52);
+   U7 : NR2 port map( A => n57, B => n54, Z => n56);
+   U8 : EN port map( A => n52, B => n58, Z => SUM_5_port);
+   U9 : IV port map( A => B(3), Z => n50);
+   U10 : IV port map( A => A(3), Z => n49);
+   U11 : AO5 port map( A => B(2), B => n51, C => A(2), Z => n53);
+   U12 : EN port map( A => n53, B => n56, Z => SUM_4_port);
+   U13 : EO port map( A => n51, B => n59, Z => SUM_3_port);
+   U14 : EO port map( A => B(2), B => A(2), Z => n59);
+   U15 : NR2 port map( A => B(1), B => A(1), Z => n54);
+   U16 : NR2 port map( A => n49, B => n50, Z => n51);
+   U17 : ND2 port map( A => A(1), B => B(1), Z => n55);
+   U18 : IV port map( A => n55, Z => n57);
+   U19 : EN port map( A => B(0), B => A(0), Z => n58);
+
+end SYN;
+
+library IEEE,lsi_10k;
+
+use IEEE.std_logic_1164.all;
+use IEEE.std_logic_arith.all;
+use IEEE.std_logic_textio.all;
+use lsi_10k.COMPONENTS.all;
+
+use work.CONV_PACK_FIR_filter.all;
+
+entity FIR_filter_DW02_mult_4_4_3 is
+
+   port( A, B : in std_logic_vector (0 to 3);  TC : in std_logic;  PRODUCT : 
+         out std_logic_vector (0 to 7));
+
+end FIR_filter_DW02_mult_4_4_3;
+
+architecture SYN of FIR_filter_DW02_mult_4_4_3 is
+
+   component NR2
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component IV
+      port( A : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component NR3
+      port( A, B, C : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component AN2
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component ND2
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component EO
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component FIR_filter_DW01_add_6_3
+      port( A, B : in std_logic_vector (0 to 5);  CI : in std_logic;  SUM : out
+            std_logic_vector (0 to 5);  CO : out std_logic);
+   end component;
+   
+   component FA1AP
+      port( CI, A, B : in std_logic;  S, CO : out std_logic);
+   end component;
+   
+   signal CARRYB_2_1_port, ab_3_3_port, CARRYB_3_2_port, ab_2_2_port, 
+      ab_2_0_port, ab_3_1_port, QB, CARRYB_3_0_port, ab_1_3_port, SUMB_1_2_port
+      , CLA_SUM_7_port, lsb_0, SUMB_3_0_port, CLA_CARRY_4_port, CARRYB_1_2_port
+      , CLA_SUM_3_port, SUMB_3_2_port, SUMB_2_1_port, CARRYB_1_0_port, 
+      CLA_CARRY_6_port, CLA_SUM_5_port, CLA_SUM_4_port, CLA_CARRY_3_port, 
+      SUMB_3_3_port, CARRYB_1_1_port, SUMB_3_1_port, CLA_CARRY_5_port, 
+      SUMB_2_2_port, QA, CLA_SUM_2_port, CLA_SUM_6_port, CARRYB_3_1_port, 
+      ab_3_2_port, ab_3_0_port, ab_2_3_port, CARRYB_2_2_port, ab_2_1_port, 
+      SUMB_1_1_port, CARRYB_2_0_port, CARRYB_3_3_port, n10, n11, n12, n13, n14,
+      n15, n16, n17, n18, n19, n20, n21, n23 : std_logic;
+
+begin
+   
+   lsb_0 <= '0';
+   U5 : NR2 port map( A => n10, B => n11, Z => PRODUCT(7));
+   U6 : IV port map( A => A(0), Z => QA);
+   U7 : IV port map( A => B(0), Z => QB);
+   U8 : NR2 port map( A => A(2), B => QB, Z => ab_1_3_port);
+   U9 : NR2 port map( A => n12, B => n10, Z => ab_2_0_port);
+   U10 : NR2 port map( A => n12, B => n13, Z => ab_2_1_port);
+   U11 : NR2 port map( A => n12, B => n14, Z => ab_2_2_port);
+   U12 : NR2 port map( A => A(1), B => QB, Z => ab_2_3_port);
+   U13 : NR2 port map( A => B(3), B => QA, Z => ab_3_0_port);
+   U14 : NR2 port map( A => B(2), B => QA, Z => ab_3_1_port);
+   U15 : NR2 port map( A => B(1), B => QA, Z => ab_3_2_port);
+   U16 : NR2 port map( A => QA, B => QB, Z => ab_3_3_port);
+   U17 : NR3 port map( A => n15, B => A(3), C => QB, Z => CARRYB_1_2_port);
+   U18 : AN2 port map( A => CARRYB_3_2_port, B => SUMB_3_3_port, Z => 
+                           CLA_CARRY_6_port);
+   U19 : NR3 port map( A => n16, B => n14, C => n11, Z => CARRYB_1_1_port);
+   U20 : AN2 port map( A => CARRYB_3_1_port, B => SUMB_3_2_port, Z => 
+                           CLA_CARRY_5_port);
+   U21 : NR3 port map( A => n17, B => n13, C => n11, Z => CARRYB_1_0_port);
+   U22 : AN2 port map( A => CARRYB_3_0_port, B => SUMB_3_1_port, Z => 
+                           CLA_CARRY_4_port);
+   U23 : IV port map( A => CARRYB_3_3_port, Z => CLA_SUM_7_port);
+   U24 : IV port map( A => A(1), Z => n12);
+   U25 : IV port map( A => B(1), Z => n14);
+   U26 : IV port map( A => B(2), Z => n13);
+   U27 : IV port map( A => B(3), Z => n10);
+   U28 : ND2 port map( A => A(2), B => B(1), Z => n15);
+   U29 : IV port map( A => A(3), Z => n11);
+   U30 : ND2 port map( A => A(2), B => B(2), Z => n16);
+   U31 : ND2 port map( A => A(2), B => B(3), Z => n17);
+   U32 : EO port map( A => n18, B => n15, Z => SUMB_1_2_port);
+   U33 : EO port map( A => n19, B => n16, Z => SUMB_1_1_port);
+   U34 : EO port map( A => n20, B => n17, Z => PRODUCT(6));
+   U35 : EO port map( A => CARRYB_3_2_port, B => SUMB_3_3_port, Z => 
+                           CLA_SUM_6_port);
+   U36 : EO port map( A => CARRYB_3_1_port, B => SUMB_3_2_port, Z => 
+                           CLA_SUM_5_port);
+   U37 : EO port map( A => CARRYB_3_0_port, B => SUMB_3_1_port, Z => 
+                           CLA_SUM_4_port);
+   U38 : ND2 port map( A => B(0), B => n11, Z => n18);
+   U39 : ND2 port map( A => A(3), B => B(1), Z => n19);
+   U40 : ND2 port map( A => A(3), B => B(2), Z => n20);
+   FS : FIR_filter_DW01_add_6_3 port map( A(0) => CLA_SUM_7_port, A(1) => 
+                           CLA_SUM_6_port, A(2) => CLA_SUM_5_port, A(3) => 
+                           CLA_SUM_4_port, A(4) => CLA_SUM_3_port, A(5) => 
+                           CLA_SUM_2_port, B(0) => CLA_CARRY_6_port, B(1) => 
+                           CLA_CARRY_5_port, B(2) => CLA_CARRY_4_port, B(3) => 
+                           CLA_CARRY_3_port, B(4) => n21, B(5) => lsb_0, CI => 
+                           lsb_0, SUM(0) => PRODUCT(0), SUM(1) => PRODUCT(1), 
+                           SUM(2) => PRODUCT(2), SUM(3) => PRODUCT(3), SUM(4) 
+                           => PRODUCT(4), SUM(5) => PRODUCT(5), CO => n23);
+   n21 <= '0';
+   S5_2 : FA1AP port map( CI => ab_2_3_port, A => ab_3_2_port, B => 
+                           CARRYB_2_2_port, S => SUMB_3_2_port, CO => 
+                           CARRYB_3_2_port);
+   S2_2_1 : FA1AP port map( CI => SUMB_1_2_port, A => ab_2_1_port, B => 
+                           CARRYB_1_1_port, S => SUMB_2_1_port, CO => 
+                           CARRYB_2_1_port);
+   S1_2_0 : FA1AP port map( CI => SUMB_1_1_port, A => ab_2_0_port, B => 
+                           CARRYB_1_0_port, S => CLA_SUM_2_port, CO => 
+                           CARRYB_2_0_port);
+   S14_3 : FA1AP port map( CI => ab_3_3_port, A => QA, B => QB, S => 
+                           SUMB_3_3_port, CO => CARRYB_3_3_port);
+   S4_1 : FA1AP port map( CI => SUMB_2_2_port, A => ab_3_1_port, B => 
+                           CARRYB_2_1_port, S => SUMB_3_1_port, CO => 
+                           CARRYB_3_1_port);
+   S14_3_2 : FA1AP port map( CI => SUMB_3_0_port, A => A(0), B => B(0), S => 
+                           CLA_SUM_3_port, CO => CLA_CARRY_3_port);
+   S3_2_2 : FA1AP port map( CI => ab_1_3_port, A => ab_2_2_port, B => 
+                           CARRYB_1_2_port, S => SUMB_2_2_port, CO => 
+                           CARRYB_2_2_port);
+   S4_0 : FA1AP port map( CI => SUMB_2_1_port, A => ab_3_0_port, B => 
+                           CARRYB_2_0_port, S => SUMB_3_0_port, CO => 
+                           CARRYB_3_0_port);
+
+end SYN;
+
+library IEEE,lsi_10k;
+
+use IEEE.std_logic_1164.all;
+use IEEE.std_logic_arith.all;
+use IEEE.std_logic_textio.all;
+use lsi_10k.COMPONENTS.all;
+
+use work.CONV_PACK_FIR_filter.all;
+
+entity FIR_filter_DW01_add_16_3 is
+
+   port( A, B : in std_logic_vector (0 to 15);  CI : in std_logic;  SUM : out 
+         std_logic_vector (0 to 15);  CO : out std_logic);
+
+end FIR_filter_DW01_add_16_3;
+
+architecture SYN of FIR_filter_DW01_add_16_3 is
+
+   component AN2
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component EO
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component FA1AP
+      port( CI, A, B : in std_logic;  S, CO : out std_logic);
+   end component;
+   
+   signal carry_9_port, carry_4_port, carry_2_port, carry_15_port, 
+      carry_13_port, carry_6_port, carry_14_port, carry_11_port, carry_10_port,
+      carry_12_port, carry_8_port, carry_7_port, carry_3_port, carry_5_port, 
+      carry_1_port, n3 : std_logic;
+
+begin
+   
+   U4 : AN2 port map( A => A(15), B => B(15), Z => carry_1_port);
+   U5 : EO port map( A => B(15), B => A(15), Z => SUM(15));
+   U1_1 : FA1AP port map( CI => carry_1_port, A => A(14), B => B(14), S => 
+                           SUM(14), CO => carry_2_port);
+   U1_6 : FA1AP port map( CI => carry_6_port, A => A(9), B => B(9), S => SUM(9)
+                           , CO => carry_7_port);
+   U1_8 : FA1AP port map( CI => carry_8_port, A => A(7), B => B(7), S => SUM(7)
+                           , CO => carry_9_port);
+   U1_11 : FA1AP port map( CI => carry_11_port, A => A(4), B => B(4), S => 
+                           SUM(4), CO => carry_12_port);
+   U1_7 : FA1AP port map( CI => carry_7_port, A => A(8), B => B(8), S => SUM(8)
+                           , CO => carry_8_port);
+   U1_2 : FA1AP port map( CI => carry_2_port, A => A(13), B => B(13), S => 
+                           SUM(13), CO => carry_3_port);
+   U1_9 : FA1AP port map( CI => carry_9_port, A => A(6), B => B(6), S => SUM(6)
+                           , CO => carry_10_port);
+   U1_10 : FA1AP port map( CI => carry_10_port, A => A(5), B => B(5), S => 
+                           SUM(5), CO => carry_11_port);
+   U1_3 : FA1AP port map( CI => carry_3_port, A => A(12), B => B(12), S => 
+                           SUM(12), CO => carry_4_port);
+   U1_4 : FA1AP port map( CI => carry_4_port, A => A(11), B => B(11), S => 
+                           SUM(11), CO => carry_5_port);
+   U1_5 : FA1AP port map( CI => carry_5_port, A => A(10), B => B(10), S => 
+                           SUM(10), CO => carry_6_port);
+   U1_12 : FA1AP port map( CI => carry_12_port, A => A(3), B => B(3), S => 
+                           SUM(3), CO => carry_13_port);
+   U1_15 : FA1AP port map( CI => carry_15_port, A => A(0), B => B(0), S => 
+                           SUM(0), CO => n3);
+   U1_14 : FA1AP port map( CI => carry_14_port, A => A(1), B => B(1), S => 
+                           SUM(1), CO => carry_15_port);
+   U1_13 : FA1AP port map( CI => carry_13_port, A => A(2), B => B(2), S => 
+                           SUM(2), CO => carry_14_port);
+
+end SYN;
+
+library IEEE,lsi_10k;
+
+use IEEE.std_logic_1164.all;
+use IEEE.std_logic_arith.all;
+use IEEE.std_logic_textio.all;
+use lsi_10k.COMPONENTS.all;
+
+use work.CONV_PACK_FIR_filter.all;
+
+entity FIR_filter_DW01_add_6_2 is
+
+   port( A, B : in std_logic_vector (0 to 5);  CI : in std_logic;  SUM : out 
+         std_logic_vector (0 to 5);  CO : out std_logic);
+
+end FIR_filter_DW01_add_6_2;
+
+architecture SYN of FIR_filter_DW01_add_6_2 is
+
+   component AO6
+      port( A, B, C : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component AO7
+      port( A, B, C : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component NR2
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component EN
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component IV
+      port( A : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component AO5
+      port( A, B, C : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component EO
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component ND2
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   signal SUM_2_port, SUM_4_port, SUM_5_port, SUM_3_port, n60, n61, n62, n63, 
+      n64, n65, n66, n67, n68, n69, n70 : std_logic;
+
+begin
+   SUM <= ( SUM_5_port, SUM_4_port, SUM_3_port, SUM_2_port, A(4), A(5) );
+   
+   U5 : AO6 port map( A => n60, B => n61, C => n62, Z => SUM_2_port);
+   U6 : AO7 port map( A => n64, B => n65, C => n66, Z => n63);
+   U7 : NR2 port map( A => n68, B => n65, Z => n67);
+   U8 : EN port map( A => n63, B => n69, Z => SUM_5_port);
+   U9 : IV port map( A => B(3), Z => n61);
+   U10 : IV port map( A => A(3), Z => n60);
+   U11 : AO5 port map( A => B(2), B => n62, C => A(2), Z => n64);
+   U12 : EN port map( A => n64, B => n67, Z => SUM_4_port);
+   U13 : EO port map( A => n62, B => n70, Z => SUM_3_port);
+   U14 : EO port map( A => B(2), B => A(2), Z => n70);
+   U15 : NR2 port map( A => B(1), B => A(1), Z => n65);
+   U16 : NR2 port map( A => n60, B => n61, Z => n62);
+   U17 : ND2 port map( A => A(1), B => B(1), Z => n66);
+   U18 : IV port map( A => n66, Z => n68);
+   U19 : EN port map( A => B(0), B => A(0), Z => n69);
+
+end SYN;
+
+library IEEE,lsi_10k;
+
+use IEEE.std_logic_1164.all;
+use IEEE.std_logic_arith.all;
+use IEEE.std_logic_textio.all;
+use lsi_10k.COMPONENTS.all;
+
+use work.CONV_PACK_FIR_filter.all;
+
+entity FIR_filter_DW02_mult_4_4_2 is
+
+   port( A, B : in std_logic_vector (0 to 3);  TC : in std_logic;  PRODUCT : 
+         out std_logic_vector (0 to 7));
+
+end FIR_filter_DW02_mult_4_4_2;
+
+architecture SYN of FIR_filter_DW02_mult_4_4_2 is
+
+   component NR2
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component IV
+      port( A : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component NR3
+      port( A, B, C : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component AN2
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component ND2
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component EO
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component FIR_filter_DW01_add_6_2
+      port( A, B : in std_logic_vector (0 to 5);  CI : in std_logic;  SUM : out
+            std_logic_vector (0 to 5);  CO : out std_logic);
+   end component;
+   
+   component FA1AP
+      port( CI, A, B : in std_logic;  S, CO : out std_logic);
+   end component;
+   
+   signal CARRYB_2_1_port, ab_3_3_port, CARRYB_3_2_port, ab_2_2_port, 
+      ab_2_0_port, ab_3_1_port, QB, CARRYB_3_0_port, ab_1_3_port, SUMB_1_2_port
+      , CLA_SUM_7_port, lsb_0, SUMB_3_0_port, CLA_CARRY_4_port, CARRYB_1_2_port
+      , CLA_SUM_3_port, SUMB_3_2_port, SUMB_2_1_port, CARRYB_1_0_port, 
+      CLA_CARRY_6_port, CLA_SUM_5_port, CLA_SUM_4_port, CLA_CARRY_3_port, 
+      SUMB_3_3_port, CARRYB_1_1_port, SUMB_3_1_port, CLA_CARRY_5_port, 
+      SUMB_2_2_port, QA, CLA_SUM_2_port, CLA_SUM_6_port, CARRYB_3_1_port, 
+      ab_3_2_port, ab_3_0_port, ab_2_3_port, CARRYB_2_2_port, ab_2_1_port, 
+      SUMB_1_1_port, CARRYB_2_0_port, CARRYB_3_3_port, n22, n23, n24, n25, n26,
+      n27, n28, n29, n30, n31, n32, n33, n35 : std_logic;
+
+begin
+   
+   lsb_0 <= '0';
+   U5 : NR2 port map( A => n22, B => n23, Z => PRODUCT(7));
+   U6 : IV port map( A => A(0), Z => QA);
+   U7 : IV port map( A => B(0), Z => QB);
+   U8 : NR2 port map( A => A(2), B => QB, Z => ab_1_3_port);
+   U9 : NR2 port map( A => n24, B => n22, Z => ab_2_0_port);
+   U10 : NR2 port map( A => n24, B => n25, Z => ab_2_1_port);
+   U11 : NR2 port map( A => n24, B => n26, Z => ab_2_2_port);
+   U12 : NR2 port map( A => A(1), B => QB, Z => ab_2_3_port);
+   U13 : NR2 port map( A => B(3), B => QA, Z => ab_3_0_port);
+   U14 : NR2 port map( A => B(2), B => QA, Z => ab_3_1_port);
+   U15 : NR2 port map( A => B(1), B => QA, Z => ab_3_2_port);
+   U16 : NR2 port map( A => QA, B => QB, Z => ab_3_3_port);
+   U17 : NR3 port map( A => n27, B => A(3), C => QB, Z => CARRYB_1_2_port);
+   U18 : AN2 port map( A => CARRYB_3_2_port, B => SUMB_3_3_port, Z => 
+                           CLA_CARRY_6_port);
+   U19 : NR3 port map( A => n28, B => n26, C => n23, Z => CARRYB_1_1_port);
+   U20 : AN2 port map( A => CARRYB_3_1_port, B => SUMB_3_2_port, Z => 
+                           CLA_CARRY_5_port);
+   U21 : NR3 port map( A => n29, B => n25, C => n23, Z => CARRYB_1_0_port);
+   U22 : AN2 port map( A => CARRYB_3_0_port, B => SUMB_3_1_port, Z => 
+                           CLA_CARRY_4_port);
+   U23 : IV port map( A => CARRYB_3_3_port, Z => CLA_SUM_7_port);
+   U24 : IV port map( A => A(1), Z => n24);
+   U25 : IV port map( A => B(1), Z => n26);
+   U26 : IV port map( A => B(2), Z => n25);
+   U27 : IV port map( A => B(3), Z => n22);
+   U28 : ND2 port map( A => A(2), B => B(1), Z => n27);
+   U29 : IV port map( A => A(3), Z => n23);
+   U30 : ND2 port map( A => A(2), B => B(2), Z => n28);
+   U31 : ND2 port map( A => A(2), B => B(3), Z => n29);
+   U32 : EO port map( A => n30, B => n27, Z => SUMB_1_2_port);
+   U33 : EO port map( A => n31, B => n28, Z => SUMB_1_1_port);
+   U34 : EO port map( A => n32, B => n29, Z => PRODUCT(6));
+   U35 : EO port map( A => CARRYB_3_2_port, B => SUMB_3_3_port, Z => 
+                           CLA_SUM_6_port);
+   U36 : EO port map( A => CARRYB_3_1_port, B => SUMB_3_2_port, Z => 
+                           CLA_SUM_5_port);
+   U37 : EO port map( A => CARRYB_3_0_port, B => SUMB_3_1_port, Z => 
+                           CLA_SUM_4_port);
+   U38 : ND2 port map( A => B(0), B => n23, Z => n30);
+   U39 : ND2 port map( A => A(3), B => B(1), Z => n31);
+   U40 : ND2 port map( A => A(3), B => B(2), Z => n32);
+   FS : FIR_filter_DW01_add_6_2 port map( A(0) => CLA_SUM_7_port, A(1) => 
+                           CLA_SUM_6_port, A(2) => CLA_SUM_5_port, A(3) => 
+                           CLA_SUM_4_port, A(4) => CLA_SUM_3_port, A(5) => 
+                           CLA_SUM_2_port, B(0) => CLA_CARRY_6_port, B(1) => 
+                           CLA_CARRY_5_port, B(2) => CLA_CARRY_4_port, B(3) => 
+                           CLA_CARRY_3_port, B(4) => n33, B(5) => lsb_0, CI => 
+                           lsb_0, SUM(0) => PRODUCT(0), SUM(1) => PRODUCT(1), 
+                           SUM(2) => PRODUCT(2), SUM(3) => PRODUCT(3), SUM(4) 
+                           => PRODUCT(4), SUM(5) => PRODUCT(5), CO => n35);
+   n33 <= '0';
+   S5_2 : FA1AP port map( CI => ab_2_3_port, A => ab_3_2_port, B => 
+                           CARRYB_2_2_port, S => SUMB_3_2_port, CO => 
+                           CARRYB_3_2_port);
+   S2_2_1 : FA1AP port map( CI => SUMB_1_2_port, A => ab_2_1_port, B => 
+                           CARRYB_1_1_port, S => SUMB_2_1_port, CO => 
+                           CARRYB_2_1_port);
+   S1_2_0 : FA1AP port map( CI => SUMB_1_1_port, A => ab_2_0_port, B => 
+                           CARRYB_1_0_port, S => CLA_SUM_2_port, CO => 
+                           CARRYB_2_0_port);
+   S14_3 : FA1AP port map( CI => ab_3_3_port, A => QA, B => QB, S => 
+                           SUMB_3_3_port, CO => CARRYB_3_3_port);
+   S4_1 : FA1AP port map( CI => SUMB_2_2_port, A => ab_3_1_port, B => 
+                           CARRYB_2_1_port, S => SUMB_3_1_port, CO => 
+                           CARRYB_3_1_port);
+   S14_3_2 : FA1AP port map( CI => SUMB_3_0_port, A => A(0), B => B(0), S => 
+                           CLA_SUM_3_port, CO => CLA_CARRY_3_port);
+   S3_2_2 : FA1AP port map( CI => ab_1_3_port, A => ab_2_2_port, B => 
+                           CARRYB_1_2_port, S => SUMB_2_2_port, CO => 
+                           CARRYB_2_2_port);
+   S4_0 : FA1AP port map( CI => SUMB_2_1_port, A => ab_3_0_port, B => 
+                           CARRYB_2_0_port, S => SUMB_3_0_port, CO => 
+                           CARRYB_3_0_port);
+
+end SYN;
+
+library IEEE,lsi_10k;
+
+use IEEE.std_logic_1164.all;
+use IEEE.std_logic_arith.all;
+use IEEE.std_logic_textio.all;
+use lsi_10k.COMPONENTS.all;
+
+use work.CONV_PACK_FIR_filter.all;
+
+entity FIR_filter_DW01_add_16_2 is
+
+   port( A, B : in std_logic_vector (0 to 15);  CI : in std_logic;  SUM : out 
+         std_logic_vector (0 to 15);  CO : out std_logic);
+
+end FIR_filter_DW01_add_16_2;
+
+architecture SYN of FIR_filter_DW01_add_16_2 is
+
+   component AN2
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component EO
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component FA1AP
+      port( CI, A, B : in std_logic;  S, CO : out std_logic);
+   end component;
+   
+   signal carry_9_port, carry_4_port, carry_2_port, carry_15_port, 
+      carry_13_port, carry_6_port, carry_14_port, carry_11_port, carry_10_port,
+      carry_12_port, carry_8_port, carry_7_port, carry_3_port, carry_5_port, 
+      carry_1_port, n3 : std_logic;
+
+begin
+   
+   U4 : AN2 port map( A => A(15), B => B(15), Z => carry_1_port);
+   U5 : EO port map( A => B(15), B => A(15), Z => SUM(15));
+   U1_1 : FA1AP port map( CI => carry_1_port, A => A(14), B => B(14), S => 
+                           SUM(14), CO => carry_2_port);
+   U1_6 : FA1AP port map( CI => carry_6_port, A => A(9), B => B(9), S => SUM(9)
+                           , CO => carry_7_port);
+   U1_8 : FA1AP port map( CI => carry_8_port, A => A(7), B => B(7), S => SUM(7)
+                           , CO => carry_9_port);
+   U1_11 : FA1AP port map( CI => carry_11_port, A => A(4), B => B(4), S => 
+                           SUM(4), CO => carry_12_port);
+   U1_7 : FA1AP port map( CI => carry_7_port, A => A(8), B => B(8), S => SUM(8)
+                           , CO => carry_8_port);
+   U1_2 : FA1AP port map( CI => carry_2_port, A => A(13), B => B(13), S => 
+                           SUM(13), CO => carry_3_port);
+   U1_9 : FA1AP port map( CI => carry_9_port, A => A(6), B => B(6), S => SUM(6)
+                           , CO => carry_10_port);
+   U1_10 : FA1AP port map( CI => carry_10_port, A => A(5), B => B(5), S => 
+                           SUM(5), CO => carry_11_port);
+   U1_3 : FA1AP port map( CI => carry_3_port, A => A(12), B => B(12), S => 
+                           SUM(12), CO => carry_4_port);
+   U1_4 : FA1AP port map( CI => carry_4_port, A => A(11), B => B(11), S => 
+                           SUM(11), CO => carry_5_port);
+   U1_5 : FA1AP port map( CI => carry_5_port, A => A(10), B => B(10), S => 
+                           SUM(10), CO => carry_6_port);
+   U1_12 : FA1AP port map( CI => carry_12_port, A => A(3), B => B(3), S => 
+                           SUM(3), CO => carry_13_port);
+   U1_15 : FA1AP port map( CI => carry_15_port, A => A(0), B => B(0), S => 
+                           SUM(0), CO => n3);
+   U1_14 : FA1AP port map( CI => carry_14_port, A => A(1), B => B(1), S => 
+                           SUM(1), CO => carry_15_port);
+   U1_13 : FA1AP port map( CI => carry_13_port, A => A(2), B => B(2), S => 
+                           SUM(2), CO => carry_14_port);
+
+end SYN;
+
+library IEEE,lsi_10k;
+
+use IEEE.std_logic_1164.all;
+use IEEE.std_logic_arith.all;
+use IEEE.std_logic_textio.all;
+use lsi_10k.COMPONENTS.all;
+
+use work.CONV_PACK_FIR_filter.all;
+
+entity FIR_filter_DW01_add_6_1 is
+
+   port( A, B : in std_logic_vector (0 to 5);  CI : in std_logic;  SUM : out 
+         std_logic_vector (0 to 5);  CO : out std_logic);
+
+end FIR_filter_DW01_add_6_1;
+
+architecture SYN of FIR_filter_DW01_add_6_1 is
+
+   component AO6
+      port( A, B, C : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component AO7
+      port( A, B, C : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component NR2
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component EN
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component IV
+      port( A : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component AO5
+      port( A, B, C : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component EO
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component ND2
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   signal SUM_2_port, SUM_4_port, SUM_5_port, SUM_3_port, n71, n72, n73, n74, 
+      n75, n76, n77, n78, n79, n80, n81 : std_logic;
+
+begin
+   SUM <= ( SUM_5_port, SUM_4_port, SUM_3_port, SUM_2_port, A(4), A(5) );
+   
+   U5 : AO6 port map( A => n71, B => n72, C => n73, Z => SUM_2_port);
+   U6 : AO7 port map( A => n75, B => n76, C => n77, Z => n74);
+   U7 : NR2 port map( A => n79, B => n76, Z => n78);
+   U8 : EN port map( A => n74, B => n80, Z => SUM_5_port);
+   U9 : IV port map( A => B(3), Z => n72);
+   U10 : IV port map( A => A(3), Z => n71);
+   U11 : AO5 port map( A => B(2), B => n73, C => A(2), Z => n75);
+   U12 : EN port map( A => n75, B => n78, Z => SUM_4_port);
+   U13 : EO port map( A => n73, B => n81, Z => SUM_3_port);
+   U14 : EO port map( A => B(2), B => A(2), Z => n81);
+   U15 : NR2 port map( A => B(1), B => A(1), Z => n76);
+   U16 : NR2 port map( A => n71, B => n72, Z => n73);
+   U17 : ND2 port map( A => A(1), B => B(1), Z => n77);
+   U18 : IV port map( A => n77, Z => n79);
+   U19 : EN port map( A => B(0), B => A(0), Z => n80);
+
+end SYN;
+
+library IEEE,lsi_10k;
+
+use IEEE.std_logic_1164.all;
+use IEEE.std_logic_arith.all;
+use IEEE.std_logic_textio.all;
+use lsi_10k.COMPONENTS.all;
+
+use work.CONV_PACK_FIR_filter.all;
+
+entity FIR_filter_DW02_mult_4_4_1 is
+
+   port( A, B : in std_logic_vector (0 to 3);  TC : in std_logic;  PRODUCT : 
+         out std_logic_vector (0 to 7));
+
+end FIR_filter_DW02_mult_4_4_1;
+
+architecture SYN of FIR_filter_DW02_mult_4_4_1 is
+
+   component NR2
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component IV
+      port( A : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component NR3
+      port( A, B, C : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component AN2
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component ND2
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component EO
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component FIR_filter_DW01_add_6_1
+      port( A, B : in std_logic_vector (0 to 5);  CI : in std_logic;  SUM : out
+            std_logic_vector (0 to 5);  CO : out std_logic);
+   end component;
+   
+   component FA1AP
+      port( CI, A, B : in std_logic;  S, CO : out std_logic);
+   end component;
+   
+   signal CARRYB_2_1_port, ab_3_3_port, CARRYB_3_2_port, ab_2_2_port, 
+      ab_2_0_port, ab_3_1_port, QB, CARRYB_3_0_port, ab_1_3_port, SUMB_1_2_port
+      , CLA_SUM_7_port, lsb_0, SUMB_3_0_port, CLA_CARRY_4_port, CARRYB_1_2_port
+      , CLA_SUM_3_port, SUMB_3_2_port, SUMB_2_1_port, CARRYB_1_0_port, 
+      CLA_CARRY_6_port, CLA_SUM_5_port, CLA_SUM_4_port, CLA_CARRY_3_port, 
+      SUMB_3_3_port, CARRYB_1_1_port, SUMB_3_1_port, CLA_CARRY_5_port, 
+      SUMB_2_2_port, QA, CLA_SUM_2_port, CLA_SUM_6_port, CARRYB_3_1_port, 
+      ab_3_2_port, ab_3_0_port, ab_2_3_port, CARRYB_2_2_port, ab_2_1_port, 
+      SUMB_1_1_port, CARRYB_2_0_port, CARRYB_3_3_port, n34, n35, n36, n37, n38,
+      n39, n40, n41, n42, n43, n44, n45, n47 : std_logic;
+
+begin
+   
+   lsb_0 <= '0';
+   U5 : NR2 port map( A => n34, B => n35, Z => PRODUCT(7));
+   U6 : IV port map( A => A(0), Z => QA);
+   U7 : IV port map( A => B(0), Z => QB);
+   U8 : NR2 port map( A => A(2), B => QB, Z => ab_1_3_port);
+   U9 : NR2 port map( A => n36, B => n34, Z => ab_2_0_port);
+   U10 : NR2 port map( A => n36, B => n37, Z => ab_2_1_port);
+   U11 : NR2 port map( A => n36, B => n38, Z => ab_2_2_port);
+   U12 : NR2 port map( A => A(1), B => QB, Z => ab_2_3_port);
+   U13 : NR2 port map( A => B(3), B => QA, Z => ab_3_0_port);
+   U14 : NR2 port map( A => B(2), B => QA, Z => ab_3_1_port);
+   U15 : NR2 port map( A => B(1), B => QA, Z => ab_3_2_port);
+   U16 : NR2 port map( A => QA, B => QB, Z => ab_3_3_port);
+   U17 : NR3 port map( A => n39, B => A(3), C => QB, Z => CARRYB_1_2_port);
+   U18 : AN2 port map( A => CARRYB_3_2_port, B => SUMB_3_3_port, Z => 
+                           CLA_CARRY_6_port);
+   U19 : NR3 port map( A => n40, B => n38, C => n35, Z => CARRYB_1_1_port);
+   U20 : AN2 port map( A => CARRYB_3_1_port, B => SUMB_3_2_port, Z => 
+                           CLA_CARRY_5_port);
+   U21 : NR3 port map( A => n41, B => n37, C => n35, Z => CARRYB_1_0_port);
+   U22 : AN2 port map( A => CARRYB_3_0_port, B => SUMB_3_1_port, Z => 
+                           CLA_CARRY_4_port);
+   U23 : IV port map( A => CARRYB_3_3_port, Z => CLA_SUM_7_port);
+   U24 : IV port map( A => A(1), Z => n36);
+   U25 : IV port map( A => B(1), Z => n38);
+   U26 : IV port map( A => B(2), Z => n37);
+   U27 : IV port map( A => B(3), Z => n34);
+   U28 : ND2 port map( A => A(2), B => B(1), Z => n39);
+   U29 : IV port map( A => A(3), Z => n35);
+   U30 : ND2 port map( A => A(2), B => B(2), Z => n40);
+   U31 : ND2 port map( A => A(2), B => B(3), Z => n41);
+   U32 : EO port map( A => n42, B => n39, Z => SUMB_1_2_port);
+   U33 : EO port map( A => n43, B => n40, Z => SUMB_1_1_port);
+   U34 : EO port map( A => n44, B => n41, Z => PRODUCT(6));
+   U35 : EO port map( A => CARRYB_3_2_port, B => SUMB_3_3_port, Z => 
+                           CLA_SUM_6_port);
+   U36 : EO port map( A => CARRYB_3_1_port, B => SUMB_3_2_port, Z => 
+                           CLA_SUM_5_port);
+   U37 : EO port map( A => CARRYB_3_0_port, B => SUMB_3_1_port, Z => 
+                           CLA_SUM_4_port);
+   U38 : ND2 port map( A => B(0), B => n35, Z => n42);
+   U39 : ND2 port map( A => A(3), B => B(1), Z => n43);
+   U40 : ND2 port map( A => A(3), B => B(2), Z => n44);
+   FS : FIR_filter_DW01_add_6_1 port map( A(0) => CLA_SUM_7_port, A(1) => 
+                           CLA_SUM_6_port, A(2) => CLA_SUM_5_port, A(3) => 
+                           CLA_SUM_4_port, A(4) => CLA_SUM_3_port, A(5) => 
+                           CLA_SUM_2_port, B(0) => CLA_CARRY_6_port, B(1) => 
+                           CLA_CARRY_5_port, B(2) => CLA_CARRY_4_port, B(3) => 
+                           CLA_CARRY_3_port, B(4) => n45, B(5) => lsb_0, CI => 
+                           lsb_0, SUM(0) => PRODUCT(0), SUM(1) => PRODUCT(1), 
+                           SUM(2) => PRODUCT(2), SUM(3) => PRODUCT(3), SUM(4) 
+                           => PRODUCT(4), SUM(5) => PRODUCT(5), CO => n47);
+   n45 <= '0';
+   S5_2 : FA1AP port map( CI => ab_2_3_port, A => ab_3_2_port, B => 
+                           CARRYB_2_2_port, S => SUMB_3_2_port, CO => 
+                           CARRYB_3_2_port);
+   S2_2_1 : FA1AP port map( CI => SUMB_1_2_port, A => ab_2_1_port, B => 
+                           CARRYB_1_1_port, S => SUMB_2_1_port, CO => 
+                           CARRYB_2_1_port);
+   S1_2_0 : FA1AP port map( CI => SUMB_1_1_port, A => ab_2_0_port, B => 
+                           CARRYB_1_0_port, S => CLA_SUM_2_port, CO => 
+                           CARRYB_2_0_port);
+   S14_3 : FA1AP port map( CI => ab_3_3_port, A => QA, B => QB, S => 
+                           SUMB_3_3_port, CO => CARRYB_3_3_port);
+   S4_1 : FA1AP port map( CI => SUMB_2_2_port, A => ab_3_1_port, B => 
+                           CARRYB_2_1_port, S => SUMB_3_1_port, CO => 
+                           CARRYB_3_1_port);
+   S14_3_2 : FA1AP port map( CI => SUMB_3_0_port, A => A(0), B => B(0), S => 
+                           CLA_SUM_3_port, CO => CLA_CARRY_3_port);
+   S3_2_2 : FA1AP port map( CI => ab_1_3_port, A => ab_2_2_port, B => 
+                           CARRYB_1_2_port, S => SUMB_2_2_port, CO => 
+                           CARRYB_2_2_port);
+   S4_0 : FA1AP port map( CI => SUMB_2_1_port, A => ab_3_0_port, B => 
+                           CARRYB_2_0_port, S => SUMB_3_0_port, CO => 
+                           CARRYB_3_0_port);
+
+end SYN;
+
+library IEEE,lsi_10k;
+
+use IEEE.std_logic_1164.all;
+use IEEE.std_logic_arith.all;
+use IEEE.std_logic_textio.all;
+use lsi_10k.COMPONENTS.all;
+
+use work.CONV_PACK_FIR_filter.all;
+
+entity FIR_filter_DW01_add_16_1 is
+
+   port( A, B : in std_logic_vector (0 to 15);  CI : in std_logic;  SUM : out 
+         std_logic_vector (0 to 15);  CO : out std_logic);
+
+end FIR_filter_DW01_add_16_1;
+
+architecture SYN of FIR_filter_DW01_add_16_1 is
+
+   component AN2
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component EO
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component FA1AP
+      port( CI, A, B : in std_logic;  S, CO : out std_logic);
+   end component;
+   
+   signal carry_9_port, carry_4_port, carry_2_port, carry_15_port, 
+      carry_13_port, carry_6_port, carry_14_port, carry_11_port, carry_10_port,
+      carry_12_port, carry_8_port, carry_7_port, carry_3_port, carry_5_port, 
+      carry_1_port, n3 : std_logic;
+
+begin
+   
+   U4 : AN2 port map( A => A(15), B => B(15), Z => carry_1_port);
+   U5 : EO port map( A => B(15), B => A(15), Z => SUM(15));
+   U1_1 : FA1AP port map( CI => carry_1_port, A => A(14), B => B(14), S => 
+                           SUM(14), CO => carry_2_port);
+   U1_6 : FA1AP port map( CI => carry_6_port, A => A(9), B => B(9), S => SUM(9)
+                           , CO => carry_7_port);
+   U1_8 : FA1AP port map( CI => carry_8_port, A => A(7), B => B(7), S => SUM(7)
+                           , CO => carry_9_port);
+   U1_11 : FA1AP port map( CI => carry_11_port, A => A(4), B => B(4), S => 
+                           SUM(4), CO => carry_12_port);
+   U1_7 : FA1AP port map( CI => carry_7_port, A => A(8), B => B(8), S => SUM(8)
+                           , CO => carry_8_port);
+   U1_2 : FA1AP port map( CI => carry_2_port, A => A(13), B => B(13), S => 
+                           SUM(13), CO => carry_3_port);
+   U1_9 : FA1AP port map( CI => carry_9_port, A => A(6), B => B(6), S => SUM(6)
+                           , CO => carry_10_port);
+   U1_10 : FA1AP port map( CI => carry_10_port, A => A(5), B => B(5), S => 
+                           SUM(5), CO => carry_11_port);
+   U1_3 : FA1AP port map( CI => carry_3_port, A => A(12), B => B(12), S => 
+                           SUM(12), CO => carry_4_port);
+   U1_4 : FA1AP port map( CI => carry_4_port, A => A(11), B => B(11), S => 
+                           SUM(11), CO => carry_5_port);
+   U1_5 : FA1AP port map( CI => carry_5_port, A => A(10), B => B(10), S => 
+                           SUM(10), CO => carry_6_port);
+   U1_12 : FA1AP port map( CI => carry_12_port, A => A(3), B => B(3), S => 
+                           SUM(3), CO => carry_13_port);
+   U1_15 : FA1AP port map( CI => carry_15_port, A => A(0), B => B(0), S => 
+                           SUM(0), CO => n3);
+   U1_14 : FA1AP port map( CI => carry_14_port, A => A(1), B => B(1), S => 
+                           SUM(1), CO => carry_15_port);
+   U1_13 : FA1AP port map( CI => carry_13_port, A => A(2), B => B(2), S => 
+                           SUM(2), CO => carry_14_port);
+
+end SYN;
+
+library IEEE,lsi_10k;
+
+use IEEE.std_logic_1164.all;
+use IEEE.std_logic_arith.all;
+use IEEE.std_logic_textio.all;
+use lsi_10k.COMPONENTS.all;
+
+use work.CONV_PACK_FIR_filter.all;
+
+entity FIR_filter_DW01_add_6_0 is
+
+   port( A, B : in std_logic_vector (0 to 5);  CI : in std_logic;  SUM : out 
+         std_logic_vector (0 to 5);  CO : out std_logic);
+
+end FIR_filter_DW01_add_6_0;
+
+architecture SYN of FIR_filter_DW01_add_6_0 is
+
+   component AO6
+      port( A, B, C : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component AO7
+      port( A, B, C : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component NR2
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component EN
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component IV
+      port( A : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component AO5
+      port( A, B, C : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component EO
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component ND2
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   signal SUM_2_port, SUM_4_port, SUM_5_port, SUM_3_port, n82, n83, n84, n85, 
+      n86, n87, n88, n89, n90, n91, n92 : std_logic;
+
+begin
+   SUM <= ( SUM_5_port, SUM_4_port, SUM_3_port, SUM_2_port, A(4), A(5) );
+   
+   U5 : AO6 port map( A => n82, B => n83, C => n84, Z => SUM_2_port);
+   U6 : AO7 port map( A => n86, B => n87, C => n88, Z => n85);
+   U7 : NR2 port map( A => n90, B => n87, Z => n89);
+   U8 : EN port map( A => n85, B => n91, Z => SUM_5_port);
+   U9 : IV port map( A => B(3), Z => n83);
+   U10 : IV port map( A => A(3), Z => n82);
+   U11 : AO5 port map( A => B(2), B => n84, C => A(2), Z => n86);
+   U12 : EN port map( A => n86, B => n89, Z => SUM_4_port);
+   U13 : EO port map( A => n84, B => n92, Z => SUM_3_port);
+   U14 : EO port map( A => B(2), B => A(2), Z => n92);
+   U15 : NR2 port map( A => B(1), B => A(1), Z => n87);
+   U16 : NR2 port map( A => n82, B => n83, Z => n84);
+   U17 : ND2 port map( A => A(1), B => B(1), Z => n88);
+   U18 : IV port map( A => n88, Z => n90);
+   U19 : EN port map( A => B(0), B => A(0), Z => n91);
+
+end SYN;
+
+library IEEE,lsi_10k;
+
+use IEEE.std_logic_1164.all;
+use IEEE.std_logic_arith.all;
+use IEEE.std_logic_textio.all;
+use lsi_10k.COMPONENTS.all;
+
+use work.CONV_PACK_FIR_filter.all;
+
+entity FIR_filter_DW02_mult_4_4_0 is
+
+   port( A, B : in std_logic_vector (0 to 3);  TC : in std_logic;  PRODUCT : 
+         out std_logic_vector (0 to 7));
+
+end FIR_filter_DW02_mult_4_4_0;
+
+architecture SYN of FIR_filter_DW02_mult_4_4_0 is
+
+   component NR2
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component IV
+      port( A : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component NR3
+      port( A, B, C : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component AN2
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component ND2
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component EO
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component FIR_filter_DW01_add_6_0
+      port( A, B : in std_logic_vector (0 to 5);  CI : in std_logic;  SUM : out
+            std_logic_vector (0 to 5);  CO : out std_logic);
+   end component;
+   
+   component FA1AP
+      port( CI, A, B : in std_logic;  S, CO : out std_logic);
+   end component;
+   
+   signal CARRYB_2_1_port, ab_3_3_port, CARRYB_3_2_port, ab_2_2_port, 
+      ab_2_0_port, ab_3_1_port, QB, CARRYB_3_0_port, ab_1_3_port, SUMB_1_2_port
+      , CLA_SUM_7_port, lsb_0, SUMB_3_0_port, CLA_CARRY_4_port, CARRYB_1_2_port
+      , CLA_SUM_3_port, SUMB_3_2_port, SUMB_2_1_port, CARRYB_1_0_port, 
+      CLA_CARRY_6_port, CLA_SUM_5_port, CLA_SUM_4_port, CLA_CARRY_3_port, 
+      SUMB_3_3_port, CARRYB_1_1_port, SUMB_3_1_port, CLA_CARRY_5_port, 
+      SUMB_2_2_port, QA, CLA_SUM_2_port, CLA_SUM_6_port, CARRYB_3_1_port, 
+      ab_3_2_port, ab_3_0_port, ab_2_3_port, CARRYB_2_2_port, ab_2_1_port, 
+      SUMB_1_1_port, CARRYB_2_0_port, CARRYB_3_3_port, n46, n47, n48, n93, n94,
+      n95, n96, n97, n98, n99, n100, n101, n103 : std_logic;
+
+begin
+   
+   lsb_0 <= '0';
+   U5 : NR2 port map( A => n46, B => n47, Z => PRODUCT(7));
+   U6 : IV port map( A => A(0), Z => QA);
+   U7 : IV port map( A => B(0), Z => QB);
+   U8 : NR2 port map( A => A(2), B => QB, Z => ab_1_3_port);
+   U9 : NR2 port map( A => n48, B => n46, Z => ab_2_0_port);
+   U10 : NR2 port map( A => n48, B => n93, Z => ab_2_1_port);
+   U11 : NR2 port map( A => n48, B => n94, Z => ab_2_2_port);
+   U12 : NR2 port map( A => A(1), B => QB, Z => ab_2_3_port);
+   U13 : NR2 port map( A => B(3), B => QA, Z => ab_3_0_port);
+   U14 : NR2 port map( A => B(2), B => QA, Z => ab_3_1_port);
+   U15 : NR2 port map( A => B(1), B => QA, Z => ab_3_2_port);
+   U16 : NR2 port map( A => QA, B => QB, Z => ab_3_3_port);
+   U17 : NR3 port map( A => n95, B => A(3), C => QB, Z => CARRYB_1_2_port);
+   U18 : AN2 port map( A => CARRYB_3_2_port, B => SUMB_3_3_port, Z => 
+                           CLA_CARRY_6_port);
+   U19 : NR3 port map( A => n96, B => n94, C => n47, Z => CARRYB_1_1_port);
+   U20 : AN2 port map( A => CARRYB_3_1_port, B => SUMB_3_2_port, Z => 
+                           CLA_CARRY_5_port);
+   U21 : NR3 port map( A => n97, B => n93, C => n47, Z => CARRYB_1_0_port);
+   U22 : AN2 port map( A => CARRYB_3_0_port, B => SUMB_3_1_port, Z => 
+                           CLA_CARRY_4_port);
+   U23 : IV port map( A => CARRYB_3_3_port, Z => CLA_SUM_7_port);
+   U24 : IV port map( A => A(1), Z => n48);
+   U25 : IV port map( A => B(1), Z => n94);
+   U26 : IV port map( A => B(2), Z => n93);
+   U27 : IV port map( A => B(3), Z => n46);
+   U28 : ND2 port map( A => A(2), B => B(1), Z => n95);
+   U29 : IV port map( A => A(3), Z => n47);
+   U30 : ND2 port map( A => A(2), B => B(2), Z => n96);
+   U31 : ND2 port map( A => A(2), B => B(3), Z => n97);
+   U32 : EO port map( A => n98, B => n95, Z => SUMB_1_2_port);
+   U33 : EO port map( A => n99, B => n96, Z => SUMB_1_1_port);
+   U34 : EO port map( A => n100, B => n97, Z => PRODUCT(6));
+   U35 : EO port map( A => CARRYB_3_2_port, B => SUMB_3_3_port, Z => 
+                           CLA_SUM_6_port);
+   U36 : EO port map( A => CARRYB_3_1_port, B => SUMB_3_2_port, Z => 
+                           CLA_SUM_5_port);
+   U37 : EO port map( A => CARRYB_3_0_port, B => SUMB_3_1_port, Z => 
+                           CLA_SUM_4_port);
+   U38 : ND2 port map( A => B(0), B => n47, Z => n98);
+   U39 : ND2 port map( A => A(3), B => B(1), Z => n99);
+   U40 : ND2 port map( A => A(3), B => B(2), Z => n100);
+   FS : FIR_filter_DW01_add_6_0 port map( A(0) => CLA_SUM_7_port, A(1) => 
+                           CLA_SUM_6_port, A(2) => CLA_SUM_5_port, A(3) => 
+                           CLA_SUM_4_port, A(4) => CLA_SUM_3_port, A(5) => 
+                           CLA_SUM_2_port, B(0) => CLA_CARRY_6_port, B(1) => 
+                           CLA_CARRY_5_port, B(2) => CLA_CARRY_4_port, B(3) => 
+                           CLA_CARRY_3_port, B(4) => n101, B(5) => lsb_0, CI =>
+                           lsb_0, SUM(0) => PRODUCT(0), SUM(1) => PRODUCT(1), 
+                           SUM(2) => PRODUCT(2), SUM(3) => PRODUCT(3), SUM(4) 
+                           => PRODUCT(4), SUM(5) => PRODUCT(5), CO => n103);
+   n101 <= '0';
+   S5_2 : FA1AP port map( CI => ab_2_3_port, A => ab_3_2_port, B => 
+                           CARRYB_2_2_port, S => SUMB_3_2_port, CO => 
+                           CARRYB_3_2_port);
+   S2_2_1 : FA1AP port map( CI => SUMB_1_2_port, A => ab_2_1_port, B => 
+                           CARRYB_1_1_port, S => SUMB_2_1_port, CO => 
+                           CARRYB_2_1_port);
+   S1_2_0 : FA1AP port map( CI => SUMB_1_1_port, A => ab_2_0_port, B => 
+                           CARRYB_1_0_port, S => CLA_SUM_2_port, CO => 
+                           CARRYB_2_0_port);
+   S14_3 : FA1AP port map( CI => ab_3_3_port, A => QA, B => QB, S => 
+                           SUMB_3_3_port, CO => CARRYB_3_3_port);
+   S4_1 : FA1AP port map( CI => SUMB_2_2_port, A => ab_3_1_port, B => 
+                           CARRYB_2_1_port, S => SUMB_3_1_port, CO => 
+                           CARRYB_3_1_port);
+   S14_3_2 : FA1AP port map( CI => SUMB_3_0_port, A => A(0), B => B(0), S => 
+                           CLA_SUM_3_port, CO => CLA_CARRY_3_port);
+   S3_2_2 : FA1AP port map( CI => ab_1_3_port, A => ab_2_2_port, B => 
+                           CARRYB_1_2_port, S => SUMB_2_2_port, CO => 
+                           CARRYB_2_2_port);
+   S4_0 : FA1AP port map( CI => SUMB_2_1_port, A => ab_3_0_port, B => 
+                           CARRYB_2_0_port, S => SUMB_3_0_port, CO => 
+                           CARRYB_3_0_port);
+
+end SYN;
+
+library IEEE,lsi_10k;
+
+use IEEE.std_logic_1164.all;
+use IEEE.std_logic_arith.all;
+use IEEE.std_logic_textio.all;
+use lsi_10k.COMPONENTS.all;
+
+use work.CONV_PACK_FIR_filter.all;
+
+entity FIR_filter_DW01_add_16_0 is
+
+   port( A, B : in std_logic_vector (0 to 15);  CI : in std_logic;  SUM : out 
+         std_logic_vector (0 to 15);  CO : out std_logic);
+
+end FIR_filter_DW01_add_16_0;
+
+architecture SYN of FIR_filter_DW01_add_16_0 is
+
+   component AN2
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component EO
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component FA1AP
+      port( CI, A, B : in std_logic;  S, CO : out std_logic);
+   end component;
+   
+   signal carry_9_port, carry_4_port, carry_2_port, carry_15_port, 
+      carry_13_port, carry_6_port, carry_14_port, carry_11_port, carry_10_port,
+      carry_12_port, carry_8_port, carry_7_port, carry_3_port, carry_5_port, 
+      carry_1_port, n3 : std_logic;
+
+begin
+   
+   U4 : AN2 port map( A => A(15), B => B(15), Z => carry_1_port);
+   U5 : EO port map( A => B(15), B => A(15), Z => SUM(15));
+   U1_1 : FA1AP port map( CI => carry_1_port, A => A(14), B => B(14), S => 
+                           SUM(14), CO => carry_2_port);
+   U1_6 : FA1AP port map( CI => carry_6_port, A => A(9), B => B(9), S => SUM(9)
+                           , CO => carry_7_port);
+   U1_8 : FA1AP port map( CI => carry_8_port, A => A(7), B => B(7), S => SUM(7)
+                           , CO => carry_9_port);
+   U1_11 : FA1AP port map( CI => carry_11_port, A => A(4), B => B(4), S => 
+                           SUM(4), CO => carry_12_port);
+   U1_7 : FA1AP port map( CI => carry_7_port, A => A(8), B => B(8), S => SUM(8)
+                           , CO => carry_8_port);
+   U1_2 : FA1AP port map( CI => carry_2_port, A => A(13), B => B(13), S => 
+                           SUM(13), CO => carry_3_port);
+   U1_9 : FA1AP port map( CI => carry_9_port, A => A(6), B => B(6), S => SUM(6)
+                           , CO => carry_10_port);
+   U1_10 : FA1AP port map( CI => carry_10_port, A => A(5), B => B(5), S => 
+                           SUM(5), CO => carry_11_port);
+   U1_3 : FA1AP port map( CI => carry_3_port, A => A(12), B => B(12), S => 
+                           SUM(12), CO => carry_4_port);
+   U1_4 : FA1AP port map( CI => carry_4_port, A => A(11), B => B(11), S => 
+                           SUM(11), CO => carry_5_port);
+   U1_5 : FA1AP port map( CI => carry_5_port, A => A(10), B => B(10), S => 
+                           SUM(10), CO => carry_6_port);
+   U1_12 : FA1AP port map( CI => carry_12_port, A => A(3), B => B(3), S => 
+                           SUM(3), CO => carry_13_port);
+   U1_15 : FA1AP port map( CI => carry_15_port, A => A(0), B => B(0), S => 
+                           SUM(0), CO => n3);
+   U1_14 : FA1AP port map( CI => carry_14_port, A => A(1), B => B(1), S => 
+                           SUM(1), CO => carry_15_port);
+   U1_13 : FA1AP port map( CI => carry_13_port, A => A(2), B => B(2), S => 
+                           SUM(2), CO => carry_14_port);
+
+end SYN;
+
+library IEEE,lsi_10k;
+
+use IEEE.std_logic_1164.all;
+use IEEE.std_logic_arith.all;
+use IEEE.std_logic_textio.all;
+use lsi_10k.COMPONENTS.all;
+
+use work.CONV_PACK_FIR_filter.all;
+
+entity FIR_filter is
+
+   port( rst, clk, coef_ld, start, o_enable, bypass : in std_logic;  Xn_in : in
+         std_logic_vector (3 downto 0);  Yn_in : in std_logic_vector (15 downto
+         0);  Xn_out : out std_logic_vector (3 downto 0);  Yn_out : out 
+         std_logic_vector (15 downto 0));
+
+end FIR_filter;
+
+architecture SYN of FIR_filter is
+
+   component NR2
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component IV
+      port( A : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component AO7
+      port( A, B, C : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component AN2
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component AO2
+      port( A, B, C, D : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component BTS4P
+      port( A, E : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component FD2P
+      port( D, CP, CD : in std_logic;  Q, QN : out std_logic);
+   end component;
+   
+   component FD1P
+      port( D, CP : in std_logic;  Q, QN : out std_logic);
+   end component;
+   
+   component FJK2SP
+      port( J, K, CP, CD, TI, TE : in std_logic;  Q, QN : out std_logic);
+   end component;
+   
+   component FIR_filter_DW02_mult_4_4_3
+      port( A, B : in std_logic_vector (0 to 3);  TC : in std_logic;  PRODUCT :
+            out std_logic_vector (0 to 7));
+   end component;
+   
+   component FIR_filter_DW01_add_16_3
+      port( A, B : in std_logic_vector (0 to 15);  CI : in std_logic;  SUM : 
+            out std_logic_vector (0 to 15);  CO : out std_logic);
+   end component;
+   
+   component FIR_filter_DW02_mult_4_4_2
+      port( A, B : in std_logic_vector (0 to 3);  TC : in std_logic;  PRODUCT :
+            out std_logic_vector (0 to 7));
+   end component;
+   
+   component FIR_filter_DW01_add_16_2
+      port( A, B : in std_logic_vector (0 to 15);  CI : in std_logic;  SUM : 
+            out std_logic_vector (0 to 15);  CO : out std_logic);
+   end component;
+   
+   component FIR_filter_DW02_mult_4_4_1
+      port( A, B : in std_logic_vector (0 to 3);  TC : in std_logic;  PRODUCT :
+            out std_logic_vector (0 to 7));
+   end component;
+   
+   component FIR_filter_DW01_add_16_1
+      port( A, B : in std_logic_vector (0 to 15);  CI : in std_logic;  SUM : 
+            out std_logic_vector (0 to 15);  CO : out std_logic);
+   end component;
+   
+   component FIR_filter_DW02_mult_4_4_0
+      port( A, B : in std_logic_vector (0 to 3);  TC : in std_logic;  PRODUCT :
+            out std_logic_vector (0 to 7));
+   end component;
+   
+   component FIR_filter_DW01_add_16_0
+      port( A, B : in std_logic_vector (0 to 15);  CI : in std_logic;  SUM : 
+            out std_logic_vector (0 to 15);  CO : out std_logic);
+   end component;
+   
+   signal n1140x1xx6x, xxxxreturn1755x6x, xxxxreturn1298x4x, n1597x0xx7x, 
+      SUMx3xx3x, COEFx3xx2x, xxxxreturn883x7x, SUMx2xx10x, SUMx2xx9x, 
+      xxxxreturn1797x0x, MULT16x3xx6x, xxxxreturn841x5x, MULT8x1xx2x, SUMx2xx0x
+      , COEFx2xx1x, MULT16x2xx5x, xxxxreturn384x4x, xxxxreturn426x11x, 
+      MULT8x0xx1x, xxxxreturn1797x9x, MULT16x2xx10x, MULT16x3xx12x, REG1x2xx1x,
+      MULT16x2xx8x, xxxxreturn841x1x, xxxxreturn883x12x, MULT8x1xx6x, 
+      xxxxreturn1797x4x, SUMx2xx14x, REG2_18_port, MULT16x3xx2x, 
+      xxxxreturn883x3x, SUMx3xx7x, REG2_0_port, n1597x0xx3x, xxxxreturn1298x0x,
+      n1140x1xx2x, xxxxreturn1755x2x, MULT16x2xx14x, MULT8x0xx5x, REG1x3xx2x, 
+      SUMx3xx12x, REG2_7_port, xxxxreturn426x15x, xxxxreturn384x0x, SUMx2xx4x, 
+      MULT16x2xx1x, SUMx3xx10x, xxxxreturn384x2x, SUMx2xx6x, REG2_5_port, 
+      MULT16x2xx3x, xxxxreturn883x8x, MULT16x3xx9x, MULT8x0xx7x, REG1x3xx0x, 
+      xxxxreturn1797x6x, MULT16x3xx0x, SUMx3xx5x, REG2_16_port, 
+      xxxxreturn883x1x, REG2_2_port, xxxxreturn1298x2x, n1597x0xx1x, 
+      n1140x1xx0x, xxxxreturn1755x0x, MULT16x3xx10x, REG1x2xx3x, 
+      xxxxreturn883x10x, xxxxreturn841x3x, MULT8x1xx4x, SUMx3xx8x, MULT8x0xx3x,
+      MULT16x2xx12x, COEFx2xx3x, MULT16x2xx7x, SUMx3xx14x, SUMx2xx2x, 
+      xxxxreturn384x6x, xxxxreturn426x13x, xxxxreturn841x7x, xxxxreturn883x14x,
+      MULT8x1xx0x, MULT16x3xx14x, n1140x1xx4x, xxxxreturn1755x4x, n1597x0xx5x, 
+      xxxxreturn1298x6x, SUMx3xx1x, SUMx2xx12x, COEFx3xx0x, xxxxreturn883x5x, 
+      xxxxreturn1797x2x, MULT16x3xx4x, SUMx1xx13x, SUMx1xx7x, REG2_8_port, 
+      MULT16x1xx2x, xxxxreturn1340x3x, MULT8x3xx6x, MULT16x0xx15x, MULT16x0xx8x
+      , xxxxreturn426x2x, n683x2xx1x, REG1x0xx1x, xxxxreturn1340x15x, SUMx0xx4x
+      , MULT16x0xx1x, n226x3xx2x, SUMx0xx15x, REG2_15_port, MULT16x1xx13x, 
+      REG1x1xx2x, MULT8x2xx5x, xxxxreturn1340x11x, xxxxreturn426x6x, n683x2xx5x
+      , MULT8x3xx2x, xxxxreturn1797x12x, SUMx1xx3x, SUMx0xx9x, MULT16x0xx11x, 
+      xxxxreturn1340x7x, MULT16x1xx6x, COEFx1xx2x, MULT8x2xx1x, SUMx0xx11x, 
+      SUMx0xx0x, n226x3xx6x, COEFx0xx1x, MULT16x0xx5x, SUMx0xx2x, COEFx0xx3x, 
+      n226x3xx4x, SUMx0xx13x, MULT16x0xx7x, SUMx1xx8x, MULT8x2xx3x, SUMx1xx15x,
+      SUMx1xx1x, MULT16x1xx15x, MULT16x1xx4x, COEFx1xx0x, xxxxreturn1340x13x, 
+      xxxxreturn426x4x, n683x2xx7x, MULT8x3xx0x, xxxxreturn1797x10x, 
+      xxxxreturn1340x5x, MULT16x0xx13x, MULT16x1xx11x, REG1x1xx0x, MULT8x2xx7x,
+      MULT16x1xx9x, SUMx0xx6x, MULT16x0xx3x, n226x3xx0x, xxxxreturn1340x8x, 
+      REG2_13_port, xxxxreturn426x9x, xxxxreturn1340x1x, MULT8x3xx4x, 
+      xxxxreturn1797x14x, REG1x0xx3x, xxxxreturn426x0x, n683x2xx3x, SUMx1xx11x,
+      SUMx1xx5x, REG2_10_port, MULT16x1xx0x, REG1x1xx1x, MULT16x1xx10x, 
+      MULT8x2xx6x, SUMx0xx7x, MULT16x1xx8x, n226x3xx1x, xxxxreturn1340x9x, 
+      MULT16x0xx2x, xxxxreturn426x8x, REG2_12_port, MULT8x3xx5x, 
+      xxxxreturn1797x15x, xxxxreturn1340x0x, xxxxreturn426x1x, n683x2xx2x, 
+      SUMx1xx10x, REG1x0xx2x, REG2_11_port, SUMx1xx4x, MULT16x1xx1x, SUMx0xx12x
+      , SUMx0xx3x, MULT16x0xx6x, n226x3xx5x, COEFx0xx2x, MULT8x2xx2x, SUMx1xx9x
+      , SUMx1xx0x, MULT16x1xx14x, SUMx1xx14x, COEFx1xx1x, MULT16x1xx5x, 
+      xxxxreturn426x5x, n683x2xx6x, xxxxreturn1340x12x, xxxxreturn1340x4x, 
+      MULT16x0xx12x, MULT8x3xx1x, xxxxreturn1797x11x, xxxxreturn426x7x, 
+      n683x2xx4x, xxxxreturn1340x10x, SUMx1xx2x, SUMx0xx8x, MULT16x0xx10x, 
+      xxxxreturn1340x6x, MULT8x3xx3x, xxxxreturn1797x13x, COEFx1xx3x, 
+      MULT16x1xx7x, MULT8x2xx0x, SUMx0xx1x, MULT16x0xx4x, n226x3xx7x, 
+      SUMx1xx12x, SUMx0xx10x, COEFx0xx0x, REG2_9_port, SUMx1xx6x, MULT16x1xx3x,
+      MULT8x3xx7x, MULT16x0xx9x, xxxxreturn1340x2x, MULT16x0xx14x, 
+      xxxxreturn1340x14x, SUMx0xx14x, SUMx0xx5x, REG1x0xx0x, xxxxreturn426x3x, 
+      n683x2xx0x, n226x3xx3x, MULT16x0xx0x, REG2_14_port, REG1x1xx3x, 
+      MULT16x1xx12x, MULT8x2xx4x, SUMx3xx9x, MULT16x2xx13x, MULT8x0xx2x, 
+      SUMx2xx3x, COEFx2xx2x, SUMx3xx15x, MULT16x2xx6x, xxxxreturn426x12x, 
+      xxxxreturn384x7x, xxxxreturn883x15x, xxxxreturn841x6x, MULT8x1xx1x, 
+      MULT16x3xx15x, xxxxreturn1298x7x, n1597x0xx4x, n1140x1xx5x, 
+      xxxxreturn1755x5x, SUMx3xx11x, SUMx3xx0x, SUMx2xx13x, COEFx3xx1x, 
+      xxxxreturn1797x3x, MULT16x3xx5x, xxxxreturn883x4x, REG2_4_port, 
+      xxxxreturn384x3x, MULT16x2xx2x, SUMx3xx4x, SUMx2xx7x, MULT16x3xx8x, 
+      MULT8x0xx6x, xxxxreturn883x9x, REG2_17_port, REG1x3xx1x, xxxxreturn883x0x
+      , xxxxreturn1797x7x, MULT16x3xx1x, n1140x1xx1x, REG2_3_port, 
+      xxxxreturn1755x1x, n1597x0xx0x, xxxxreturn1298x3x, REG2_19_port, 
+      REG1x2xx2x, MULT16x3xx11x, xxxxreturn841x2x, xxxxreturn883x11x, 
+      MULT8x1xx5x, REG1x2xx0x, MULT16x3xx13x, xxxxreturn883x13x, MULT16x2xx9x, 
+      xxxxreturn841x0x, MULT8x1xx7x, xxxxreturn883x2x, SUMx3xx6x, SUMx2xx15x, 
+      xxxxreturn1797x5x, MULT16x3xx3x, n1140x1xx3x, xxxxreturn1755x3x, 
+      REG2_1_port, xxxxreturn1298x1x, n1597x0xx2x, MULT8x0xx4x, SUMx3xx13x, 
+      MULT16x2xx15x, REG2_6_port, REG1x3xx3x, xxxxreturn384x1x, 
+      xxxxreturn426x14x, SUMx2xx5x, MULT16x2xx0x, n1597x0xx6x, 
+      xxxxreturn1298x5x, n1140x1xx7x, SUMx3xx2x, COEFx3xx3x, xxxxreturn1755x7x,
+      xxxxreturn1797x1x, MULT16x3xx7x, xxxxreturn883x6x, SUMx2xx11x, 
+      xxxxreturn841x4x, MULT8x1xx3x, SUMx2xx8x, SUMx2xx1x, COEFx2xx0x, 
+      MULT16x2xx4x, xxxxreturn426x10x, xxxxreturn384x5x, MULT16x2xx11x, 
+      MULT8x0xx0x, xxxxreturn1797x8x, n2498, n2499, n2500, n2501, n2502, n2503,
+      n2504, n2505, n2506, n2507, n2508, n2509, n2510, n2511, n2512, n2513, 
+      n2514, n2515, n2516, n2517, n2518, n2519, n2520, n2521, n2522, n2523, 
+      n2524, n2525, n2526, n2527, n2528, n2529, n2530, n2531, n2532, n2533, 
+      n2534, n2535, n2536, n2537, n2538, n2539, n2540, n2541, n2542, n2543, 
+      n2544, n2545, n2546, n2547, n2548, n2549, n2550, n2551, n2552, n2553, 
+      n2554, n2555, n2556, n2557, n2558, n2559, n2560, n2561, n2562, n2563, 
+      n2564, n2565, n2566, n2567, n2568, n2569, n2570, n2571, n2572, n2573, 
+      n2574, n2575, n2576, n2577, n2578, n2579, n2580, n2581, n2582, n2583, 
+      n2584, n2585, n2586, n2587, n2588, n2589, n2590, n2591, n2592, n2593, 
+      n2594, n2595, n2596, n2597, n2598, n2599, n2600, n2601, n2602, n2603, 
+      n2604, n2605, n2606, n2607, n2608, n2609, n2610, n2611, n2612, n2613, 
+      n2614, n2615, n2616, n2617, n2618, n2619, n2620, n2621, n2622, n2623, 
+      n2624, n2625, n2626, n2627, n2628, n2629, n2630, n2631, n2632, n2633, 
+      n2634, n2635, n2636, n2637, n2638, n2639, n2640, n2641, n2642, n2643, 
+      n2644, n2645, n2646, n2647, n2648, n2649, n2650, n2651, n2652, n2653, 
+      n2654, n2655, n2656, n2657, n2658, n2659, n2660, n2661, n2662, n2663, 
+      n2664, n2665, n2666, n2667, n2668, n2669, n2670, n2671, n2672, n2673, 
+      n2674, n2675, n2676, n2677, n2678, n2679, n2680, n2681, n2682, n2683, 
+      n2684, n2685, n2686, n2687, n2688, n2689, n2690, n2691, n2692, n2693, 
+      n2694, n2695, n2696, n2697, n2698, n2699, n2700, n2701, n2702, n2703, 
+      n2704, n2705, n2706, n2707, n2708, n2709, n2710, n2711, n2712, n2713, 
+      n2714, n2715, n2716, n2717, n2718, n2719, n2720, n2721, n2722, n2723, 
+      n2724, n2725, n2726, n2727, n2728, n2729, n2730, n2731, n2732, n2733, 
+      n2734, n2735, n2736, n2737, n2738, n2739, n2740, n2741, n2742, n2743, 
+      n2744, n2745, n2746, n2747, n2748, n2749, n2750, n2751, n2752, n2753, 
+      n2754, n2755, n2756, n2757, n2758, n2759, n2760, n2761, n2762, n2763, 
+      n2764, n2765, n2766, n2767, n2768, n2769, n2770, n2771, n2772, n2773, 
+      n2774, n2775, n2776, n2777, n2778, n2779, n2780, n2781, n2782, n2783, 
+      n2784, n2785, n2786, n2787, n2788, n2789, n2790, n2791, n2792, n2793, 
+      n2794, n2795, n2796, n2797, n2798, n2799, n2800, n2801, n2802, n2803, 
+      n2804, n2805, n2806, n2807, n2808, n2809, n2810, n2811, n2812, n2813, 
+      n2814, n2815 : std_logic;
+
+begin
+   
+   U417 : NR2 port map( A => n2498, B => n2499, Z => REG2_19_port);
+   U418 : NR2 port map( A => n2500, B => n2499, Z => REG2_18_port);
+   U419 : NR2 port map( A => n2501, B => n2499, Z => REG2_17_port);
+   U420 : NR2 port map( A => n2502, B => n2499, Z => REG2_16_port);
+   U421 : IV port map( A => o_enable, Z => n2567);
+   U422 : AO7 port map( A => n2503, B => n2502, C => n2504, Z => n2571);
+   U423 : AO7 port map( A => n2503, B => n2500, C => n2505, Z => n2570);
+   U424 : AO7 port map( A => n2503, B => n2498, C => n2506, Z => n2569);
+   U425 : AO7 port map( A => n2503, B => n2501, C => n2507, Z => n2568);
+   U426 : IV port map( A => bypass, Z => n2503);
+   U427 : NR2 port map( A => bypass, B => coef_ld, Z => n2508);
+   U428 : AN2 port map( A => coef_ld, B => n2503, Z => n2509);
+   U429 : IV port map( A => Xn_in(3), Z => n2498);
+   U430 : IV port map( A => Xn_in(2), Z => n2500);
+   U431 : IV port map( A => Xn_in(1), Z => n2501);
+   U432 : IV port map( A => Xn_in(0), Z => n2502);
+   U433 : IV port map( A => start, Z => n2499);
+   U434 : AO2 port map( A => MULT8x2xx7x, B => n2511, C => xxxxreturn841x7x, D 
+                           => rst, Z => n2510);
+   U435 : AO2 port map( A => MULT8x2xx6x, B => n2511, C => xxxxreturn841x6x, D 
+                           => rst, Z => n2512);
+   U436 : AO2 port map( A => MULT8x2xx5x, B => n2511, C => xxxxreturn841x5x, D 
+                           => rst, Z => n2513);
+   U437 : AO2 port map( A => MULT8x2xx4x, B => n2511, C => xxxxreturn841x4x, D 
+                           => rst, Z => n2514);
+   U438 : AO2 port map( A => MULT8x2xx3x, B => n2511, C => xxxxreturn841x3x, D 
+                           => rst, Z => n2515);
+   U439 : AO2 port map( A => MULT8x2xx2x, B => n2511, C => xxxxreturn841x2x, D 
+                           => rst, Z => n2516);
+   U440 : AO2 port map( A => MULT8x2xx1x, B => n2511, C => xxxxreturn841x1x, D 
+                           => rst, Z => n2517);
+   U441 : AO2 port map( A => MULT8x2xx0x, B => n2511, C => xxxxreturn841x0x, D 
+                           => rst, Z => n2518);
+   U442 : AO2 port map( A => MULT8x3xx7x, B => n2511, C => xxxxreturn384x7x, D 
+                           => rst, Z => n2519);
+   U443 : AO2 port map( A => MULT8x3xx6x, B => n2511, C => xxxxreturn384x6x, D 
+                           => rst, Z => n2520);
+   U444 : AO2 port map( A => MULT8x3xx5x, B => n2511, C => xxxxreturn384x5x, D 
+                           => rst, Z => n2521);
+   U445 : AO2 port map( A => MULT8x3xx4x, B => n2511, C => xxxxreturn384x4x, D 
+                           => rst, Z => n2522);
+   U446 : AO2 port map( A => MULT8x3xx3x, B => n2511, C => xxxxreturn384x3x, D 
+                           => rst, Z => n2523);
+   U447 : AO2 port map( A => MULT8x3xx2x, B => n2511, C => xxxxreturn384x2x, D 
+                           => rst, Z => n2524);
+   U448 : AO2 port map( A => MULT8x3xx1x, B => n2511, C => xxxxreturn384x1x, D 
+                           => rst, Z => n2525);
+   U449 : AO2 port map( A => MULT8x3xx0x, B => n2511, C => xxxxreturn384x0x, D 
+                           => rst, Z => n2526);
+   U450 : AO2 port map( A => MULT8x0xx7x, B => n2511, C => xxxxreturn1755x7x, D
+                           => rst, Z => n2527);
+   U451 : AO2 port map( A => MULT8x0xx6x, B => n2511, C => xxxxreturn1755x6x, D
+                           => rst, Z => n2528);
+   U452 : AO2 port map( A => MULT8x0xx5x, B => n2511, C => xxxxreturn1755x5x, D
+                           => rst, Z => n2529);
+   U453 : AO2 port map( A => MULT8x0xx4x, B => n2511, C => xxxxreturn1755x4x, D
+                           => rst, Z => n2530);
+   U454 : AO2 port map( A => MULT8x0xx3x, B => n2511, C => xxxxreturn1755x3x, D
+                           => rst, Z => n2531);
+   U455 : AO2 port map( A => MULT8x0xx2x, B => n2511, C => xxxxreturn1755x2x, D
+                           => rst, Z => n2532);
+   U456 : AO2 port map( A => MULT8x0xx1x, B => n2511, C => xxxxreturn1755x1x, D
+                           => rst, Z => n2533);
+   U457 : AO2 port map( A => MULT8x0xx0x, B => n2511, C => xxxxreturn1755x0x, D
+                           => rst, Z => n2534);
+   U458 : AO2 port map( A => MULT8x1xx7x, B => n2511, C => xxxxreturn1298x7x, D
+                           => rst, Z => n2535);
+   U459 : AO2 port map( A => MULT8x1xx6x, B => n2511, C => xxxxreturn1298x6x, D
+                           => rst, Z => n2536);
+   U460 : AO2 port map( A => MULT8x1xx5x, B => n2511, C => xxxxreturn1298x5x, D
+                           => rst, Z => n2537);
+   U461 : AO2 port map( A => MULT8x1xx4x, B => n2511, C => xxxxreturn1298x4x, D
+                           => rst, Z => n2538);
+   U462 : AO2 port map( A => MULT8x1xx3x, B => n2511, C => xxxxreturn1298x3x, D
+                           => rst, Z => n2539);
+   U463 : AO2 port map( A => MULT8x1xx2x, B => n2511, C => xxxxreturn1298x2x, D
+                           => rst, Z => n2540);
+   U464 : AO2 port map( A => MULT8x1xx1x, B => n2511, C => xxxxreturn1298x1x, D
+                           => rst, Z => n2541);
+   U465 : AO2 port map( A => MULT8x1xx0x, B => n2511, C => xxxxreturn1298x0x, D
+                           => rst, Z => n2542);
+   U466 : AO2 port map( A => Yn_in(9), B => bypass, C => SUMx0xx9x, D => n2503,
+                           Z => n2543);
+   U467 : AO2 port map( A => Yn_in(8), B => bypass, C => SUMx0xx8x, D => n2503,
+                           Z => n2544);
+   U468 : AO2 port map( A => Yn_in(7), B => bypass, C => SUMx0xx7x, D => n2503,
+                           Z => n2545);
+   U469 : AO2 port map( A => Yn_in(6), B => bypass, C => SUMx0xx6x, D => n2503,
+                           Z => n2546);
+   U470 : AO2 port map( A => Yn_in(5), B => bypass, C => SUMx0xx5x, D => n2503,
+                           Z => n2547);
+   U471 : AO2 port map( A => Yn_in(4), B => bypass, C => SUMx0xx4x, D => n2503,
+                           Z => n2548);
+   U472 : AO2 port map( A => Yn_in(3), B => bypass, C => SUMx0xx3x, D => n2503,
+                           Z => n2549);
+   U473 : AO2 port map( A => Yn_in(2), B => bypass, C => SUMx0xx2x, D => n2503,
+                           Z => n2550);
+   U474 : AO2 port map( A => Yn_in(1), B => bypass, C => SUMx0xx1x, D => n2503,
+                           Z => n2551);
+   U475 : AO2 port map( A => Yn_in(15), B => bypass, C => SUMx0xx15x, D => 
+                           n2503, Z => n2552);
+   U476 : AO2 port map( A => Yn_in(14), B => bypass, C => SUMx0xx14x, D => 
+                           n2503, Z => n2553);
+   U477 : AO2 port map( A => Yn_in(13), B => bypass, C => SUMx0xx13x, D => 
+                           n2503, Z => n2554);
+   U478 : AO2 port map( A => Yn_in(12), B => bypass, C => SUMx0xx12x, D => 
+                           n2503, Z => n2555);
+   U479 : AO2 port map( A => Yn_in(11), B => bypass, C => SUMx0xx11x, D => 
+                           n2503, Z => n2556);
+   U480 : AO2 port map( A => Yn_in(10), B => bypass, C => SUMx0xx10x, D => 
+                           n2503, Z => n2557);
+   U481 : AO2 port map( A => Yn_in(0), B => bypass, C => SUMx0xx0x, D => n2503,
+                           Z => n2558);
+   U482 : AO2 port map( A => REG2_3_port, B => n2508, C => COEFx0xx3x, D => 
+                           n2509, Z => n2506);
+   U483 : AO2 port map( A => REG2_2_port, B => n2508, C => COEFx0xx2x, D => 
+                           n2509, Z => n2505);
+   U484 : AO2 port map( A => REG2_1_port, B => n2508, C => COEFx0xx1x, D => 
+                           n2509, Z => n2507);
+   U485 : AO2 port map( A => REG2_0_port, B => n2508, C => COEFx0xx0x, D => 
+                           n2509, Z => n2504);
+   U486 : IV port map( A => rst, Z => n2511);
+   U487 : IV port map( A => n2510, Z => n683x2xx7x);
+   U488 : IV port map( A => n2512, Z => n683x2xx6x);
+   U489 : IV port map( A => n2513, Z => n683x2xx5x);
+   U490 : IV port map( A => n2514, Z => n683x2xx4x);
+   U491 : IV port map( A => n2515, Z => n683x2xx3x);
+   U492 : IV port map( A => n2516, Z => n683x2xx2x);
+   U493 : IV port map( A => n2517, Z => n683x2xx1x);
+   U494 : IV port map( A => n2518, Z => n683x2xx0x);
+   U495 : IV port map( A => n2519, Z => n226x3xx7x);
+   U496 : IV port map( A => n2520, Z => n226x3xx6x);
+   U497 : IV port map( A => n2521, Z => n226x3xx5x);
+   U498 : IV port map( A => n2522, Z => n226x3xx4x);
+   U499 : IV port map( A => n2523, Z => n226x3xx3x);
+   U500 : IV port map( A => n2524, Z => n226x3xx2x);
+   U501 : IV port map( A => n2525, Z => n226x3xx1x);
+   U502 : IV port map( A => n2526, Z => n226x3xx0x);
+   U503 : IV port map( A => n2527, Z => n1597x0xx7x);
+   U504 : IV port map( A => n2528, Z => n1597x0xx6x);
+   U505 : IV port map( A => n2529, Z => n1597x0xx5x);
+   U506 : IV port map( A => n2530, Z => n1597x0xx4x);
+   U507 : IV port map( A => n2531, Z => n1597x0xx3x);
+   U508 : IV port map( A => n2532, Z => n1597x0xx2x);
+   U509 : IV port map( A => n2533, Z => n1597x0xx1x);
+   U510 : IV port map( A => n2534, Z => n1597x0xx0x);
+   U511 : IV port map( A => n2535, Z => n1140x1xx7x);
+   U512 : IV port map( A => n2536, Z => n1140x1xx6x);
+   U513 : IV port map( A => n2537, Z => n1140x1xx5x);
+   U514 : IV port map( A => n2538, Z => n1140x1xx4x);
+   U515 : IV port map( A => n2539, Z => n1140x1xx3x);
+   U516 : IV port map( A => n2540, Z => n1140x1xx2x);
+   U517 : IV port map( A => n2541, Z => n1140x1xx1x);
+   U518 : IV port map( A => n2542, Z => n1140x1xx0x);
+   U519 : IV port map( A => n2543, Z => n2566);
+   U520 : IV port map( A => n2544, Z => n2574);
+   U521 : IV port map( A => n2545, Z => n2577);
+   U522 : IV port map( A => n2546, Z => n2561);
+   U523 : IV port map( A => n2547, Z => n2575);
+   U524 : IV port map( A => n2548, Z => n2563);
+   U525 : IV port map( A => n2549, Z => n2578);
+   U526 : IV port map( A => n2550, Z => n2559);
+   U527 : IV port map( A => n2551, Z => n2573);
+   U528 : IV port map( A => n2552, Z => n2562);
+   U529 : IV port map( A => n2553, Z => n2576);
+   U530 : IV port map( A => n2554, Z => n2565);
+   U531 : IV port map( A => n2555, Z => n2572);
+   U532 : IV port map( A => n2556, Z => n2560);
+   U533 : IV port map( A => n2557, Z => n2579);
+   U534 : IV port map( A => n2558, Z => n2564);
+   Yn_out_trix2x : BTS4P port map( A => n2559, E => n2567, Z => Yn_out(2));
+   Yn_out_trix11x : BTS4P port map( A => n2560, E => n2567, Z => Yn_out(11));
+   Yn_out_trix6x : BTS4P port map( A => n2561, E => n2567, Z => Yn_out(6));
+   Yn_out_trix15x : BTS4P port map( A => n2562, E => n2567, Z => Yn_out(15));
+   Yn_out_trix4x : BTS4P port map( A => n2563, E => n2567, Z => Yn_out(4));
+   Yn_out_trix0x : BTS4P port map( A => n2564, E => n2567, Z => Yn_out(0));
+   Yn_out_trix13x : BTS4P port map( A => n2565, E => n2567, Z => Yn_out(13));
+   Yn_out_trix9x : BTS4P port map( A => n2566, E => n2567, Z => Yn_out(9));
+   Xn_out_trix1x : BTS4P port map( A => n2568, E => n2567, Z => Xn_out(1));
+   Xn_out_trix3x : BTS4P port map( A => n2569, E => n2567, Z => Xn_out(3));
+   Xn_out_trix2x : BTS4P port map( A => n2570, E => n2567, Z => Xn_out(2));
+   Xn_out_trix0x : BTS4P port map( A => n2571, E => n2567, Z => Xn_out(0));
+   Yn_out_trix12x : BTS4P port map( A => n2572, E => n2567, Z => Yn_out(12));
+   Yn_out_trix1x : BTS4P port map( A => n2573, E => n2567, Z => Yn_out(1));
+   Yn_out_trix8x : BTS4P port map( A => n2574, E => n2567, Z => Yn_out(8));
+   Yn_out_trix5x : BTS4P port map( A => n2575, E => n2567, Z => Yn_out(5));
+   Yn_out_trix14x : BTS4P port map( A => n2576, E => n2567, Z => Yn_out(14));
+   Yn_out_trix7x : BTS4P port map( A => n2577, E => n2567, Z => Yn_out(7));
+   Yn_out_trix3x : BTS4P port map( A => n2578, E => n2567, Z => Yn_out(3));
+   Yn_out_trix10x : BTS4P port map( A => n2579, E => n2567, Z => Yn_out(10));
+   SUM_reg3x1xx11x : FD2P port map( D => xxxxreturn1340x11x, CP => clk, CD => 
+                           rst, Q => SUMx1xx11x, QN => n2604);
+   MULT16_reg4x0xx10x : FD2P port map( D => MULT8x0xx7x, CP => clk, CD => rst, 
+                           Q => MULT16x0xx10x, QN => n2605);
+   SUM_reg4x0xx8x : FD2P port map( D => xxxxreturn1797x8x, CP => clk, CD => rst
+                           , Q => SUMx0xx8x, QN => n2606);
+   REG2_reg3x1xx0x : FD2P port map( D => REG1x1xx0x, CP => clk, CD => rst, Q =>
+                           REG2_4_port, QN => n2607);
+   SUM_reg4x0xx1x : FD2P port map( D => xxxxreturn1797x1x, CP => clk, CD => rst
+                           , Q => SUMx0xx1x, QN => n2608);
+   MULT8_reg4x0xx2x : FD1P port map( D => n1597x0xx2x, CP => clk, Q => 
+                           MULT8x0xx2x, QN => n2609);
+   MULT16_regx3xx12x : FD2P port map( D => MULT8x3xx7x, CP => clk, CD => rst, Q
+                           => MULT16x3xx12x, QN => n2610);
+   MULT16_regx3xx7x : FD2P port map( D => MULT8x3xx7x, CP => clk, CD => rst, Q 
+                           => MULT16x3xx7x, QN => n2611);
+   SUM_regx3xx5x : FD2P port map( D => xxxxreturn426x5x, CP => clk, CD => rst, 
+                           Q => SUMx3xx5x, QN => n2612);
+   COEF_reg2x2xx2x : FJK2SP port map( J => n2580, K => n2580, CP => clk, CD => 
+                           rst, TI => COEFx3xx2x, TE => coef_ld, Q => 
+                           COEFx2xx2x, QN => n2613);
+   n2580 <= '0';
+   MULT16_reg2x2xx11x : FD2P port map( D => MULT8x2xx7x, CP => clk, CD => rst, 
+                           Q => MULT16x2xx11x, QN => n2614);
+   MULT8_reg2x2xx0x : FD1P port map( D => n683x2xx0x, CP => clk, Q => 
+                           MULT8x2xx0x, QN => n2615);
+   SUM_reg2x2xx3x : FD2P port map( D => xxxxreturn883x3x, CP => clk, CD => rst,
+                           Q => SUMx2xx3x, QN => n2616);
+   COEF_reg4x0xx0x : FJK2SP port map( J => n2581, K => n2581, CP => clk, CD => 
+                           rst, TI => COEFx1xx0x, TE => coef_ld, Q => 
+                           COEFx0xx0x, QN => n2617);
+   n2581 <= '0';
+   MULT16_reg3x1xx6x : FD2P port map( D => MULT8x1xx6x, CP => clk, CD => rst, Q
+                           => MULT16x1xx6x, QN => n2618);
+   MULT16_reg4x0xx14x : FD2P port map( D => MULT8x0xx7x, CP => clk, CD => rst, 
+                           Q => MULT16x0xx14x, QN => n2619);
+   SUM_reg3x1xx15x : FD2P port map( D => xxxxreturn1340x15x, CP => clk, CD => 
+                           rst, Q => SUMx1xx15x, QN => n2620);
+   REG1_reg3x1xx0x : FD2P port map( D => REG2_8_port, CP => clk, CD => rst, Q 
+                           => REG1x1xx0x, QN => n2621);
+   SUM_regx3xx8x : FD2P port map( D => xxxxreturn426x8x, CP => clk, CD => rst, 
+                           Q => SUMx3xx8x, QN => n2622);
+   REG1_regx3xx3x : FD2P port map( D => REG2_19_port, CP => clk, CD => rst, Q 
+                           => REG1x3xx3x, QN => n2623);
+   MULT16_reg3x1xx2x : FD2P port map( D => MULT8x1xx2x, CP => clk, CD => rst, Q
+                           => MULT16x1xx2x, QN => n2624);
+   SUM_regx3xx1x : FD2P port map( D => xxxxreturn426x1x, CP => clk, CD => rst, 
+                           Q => SUMx3xx1x, QN => n2625);
+   SUM_reg2x2xx7x : FD2P port map( D => xxxxreturn883x7x, CP => clk, CD => rst,
+                           Q => SUMx2xx7x, QN => n2626);
+   MULT8_reg2x2xx4x : FD1P port map( D => n683x2xx4x, CP => clk, Q => 
+                           MULT8x2xx4x, QN => n2627);
+   MULT16_regx3xx3x : FD2P port map( D => MULT8x3xx3x, CP => clk, CD => rst, Q 
+                           => MULT16x3xx3x, QN => n2628);
+   MULT16_reg2x2xx15x : FD2P port map( D => MULT8x2xx7x, CP => clk, CD => rst, 
+                           Q => MULT16x2xx15x, QN => n2629);
+   MULT8_reg4x0xx6x : FD1P port map( D => n1597x0xx6x, CP => clk, Q => 
+                           MULT8x0xx6x, QN => n2630);
+   SUM_reg4x0xx5x : FD2P port map( D => xxxxreturn1797x5x, CP => clk, CD => rst
+                           , Q => SUMx0xx5x, QN => n2631);
+   MULT16_regx3xx1x : FD2P port map( D => MULT8x3xx1x, CP => clk, CD => rst, Q 
+                           => MULT16x3xx1x, QN => n2632);
+   MULT8_reg4x0xx4x : FD1P port map( D => n1597x0xx4x, CP => clk, Q => 
+                           MULT8x0xx4x, QN => n2633);
+   SUM_reg4x0xx7x : FD2P port map( D => xxxxreturn1797x7x, CP => clk, CD => rst
+                           , Q => SUMx0xx7x, QN => n2634);
+   REG1_regx3xx1x : FD2P port map( D => REG2_17_port, CP => clk, CD => rst, Q 
+                           => REG1x3xx1x, QN => n2635);
+   MULT16_regx3xx14x : FD2P port map( D => MULT8x3xx7x, CP => clk, CD => rst, Q
+                           => MULT16x3xx14x, QN => n2636);
+   SUM_regx3xx3x : FD2P port map( D => xxxxreturn426x3x, CP => clk, CD => rst, 
+                           Q => SUMx3xx3x, QN => n2637);
+   MULT16_reg3x1xx0x : FD2P port map( D => MULT8x1xx0x, CP => clk, CD => rst, Q
+                           => MULT16x1xx0x, QN => n2638);
+   SUM_reg2x2xx5x : FD2P port map( D => xxxxreturn883x5x, CP => clk, CD => rst,
+                           Q => SUMx2xx5x, QN => n2639);
+   MULT8_reg2x2xx6x : FD1P port map( D => n683x2xx6x, CP => clk, Q => 
+                           MULT8x2xx6x, QN => n2640);
+   MULT16_reg3x1xx9x : FD2P port map( D => MULT8x1xx7x, CP => clk, CD => rst, Q
+                           => MULT16x1xx9x, QN => n2641);
+   REG1_reg3x1xx2x : FD2P port map( D => REG2_10_port, CP => clk, CD => rst, Q 
+                           => REG1x1xx2x, QN => n2642);
+   MULT16_regx3xx10x : FD2P port map( D => MULT8x3xx7x, CP => clk, CD => rst, Q
+                           => MULT16x3xx10x, QN => n2643);
+   MULT16_regx3xx8x : FD2P port map( D => MULT8x3xx7x, CP => clk, CD => rst, Q 
+                           => MULT16x3xx8x, QN => n2644);
+   SUM_regx3xx7x : FD2P port map( D => xxxxreturn426x7x, CP => clk, CD => rst, 
+                           Q => SUMx3xx7x, QN => n2645);
+   MULT8_reg2x2xx2x : FD1P port map( D => n683x2xx2x, CP => clk, Q => 
+                           MULT8x2xx2x, QN => n2646);
+   SUM_reg2x2xx1x : FD2P port map( D => xxxxreturn883x1x, CP => clk, CD => rst,
+                           Q => SUMx2xx1x, QN => n2647);
+   MULT16_reg3x1xx4x : FD2P port map( D => MULT8x1xx4x, CP => clk, CD => rst, Q
+                           => MULT16x1xx4x, QN => n2648);
+   COEF_reg4x0xx2x : FJK2SP port map( J => n2582, K => n2582, CP => clk, CD => 
+                           rst, TI => COEFx1xx2x, TE => coef_ld, Q => 
+                           COEFx0xx2x, QN => n2649);
+   n2582 <= '0';
+   MULT16_regx3xx5x : FD2P port map( D => MULT8x3xx5x, CP => clk, CD => rst, Q 
+                           => MULT16x3xx5x, QN => n2650);
+   SUM_reg4x0xx3x : FD2P port map( D => xxxxreturn1797x3x, CP => clk, CD => rst
+                           , Q => SUMx0xx3x, QN => n2651);
+   MULT8_reg4x0xx0x : FD1P port map( D => n1597x0xx0x, CP => clk, Q => 
+                           MULT8x0xx0x, QN => n2652);
+   MULT16_reg2x2xx13x : FD2P port map( D => MULT8x2xx7x, CP => clk, CD => rst, 
+                           Q => MULT16x2xx13x, QN => n2653);
+   COEF_reg2x2xx0x : FJK2SP port map( J => n2583, K => n2583, CP => clk, CD => 
+                           rst, TI => COEFx3xx0x, TE => coef_ld, Q => 
+                           COEFx2xx0x, QN => n2654);
+   n2583 <= '0';
+   REG2_reg3x1xx2x : FD2P port map( D => REG1x1xx2x, CP => clk, CD => rst, Q =>
+                           REG2_6_port, QN => n2655);
+   SUM_reg2x2xx8x : FD2P port map( D => xxxxreturn883x8x, CP => clk, CD => rst,
+                           Q => SUMx2xx8x, QN => n2656);
+   SUM_reg3x1xx13x : FD2P port map( D => xxxxreturn1340x13x, CP => clk, CD => 
+                           rst, Q => SUMx1xx13x, QN => n2657);
+   MULT16_reg4x0xx12x : FD2P port map( D => MULT8x0xx7x, CP => clk, CD => rst, 
+                           Q => MULT16x0xx12x, QN => n2658);
+   REG2_reg2x2xx3x : FD2P port map( D => REG1x2xx3x, CP => clk, CD => rst, Q =>
+                           REG2_11_port, QN => n2659);
+   SUM_reg3x1xx9x : FD2P port map( D => xxxxreturn1340x9x, CP => clk, CD => rst
+                           , Q => SUMx1xx9x, QN => n2660);
+   SUM_reg2x2xx15x : FD2P port map( D => xxxxreturn883x15x, CP => clk, CD => 
+                           rst, Q => SUMx2xx15x, QN => n2661);
+   MULT8_regx3xx6x : FD1P port map( D => n226x3xx6x, CP => clk, Q => 
+                           MULT8x3xx6x, QN => n2662);
+   REG2_reg4x0xx1x : FD2P port map( D => REG1x0xx1x, CP => clk, CD => rst, Q =>
+                           REG2_1_port, QN => n2663);
+   REG2_regx3xx2x : FD2P port map( D => REG1x3xx2x, CP => clk, CD => rst, Q => 
+                           REG2_14_port, QN => n2664);
+   COEF_regx3xx1x : FJK2SP port map( J => n2584, K => n2584, CP => clk, CD => 
+                           rst, TI => Xn_in(1), TE => coef_ld, Q => COEFx3xx1x,
+                           QN => n2665);
+   n2584 <= '0';
+   MULT8_reg3x1xx3x : FD1P port map( D => n1140x1xx3x, CP => clk, Q => 
+                           MULT8x1xx3x, QN => n2666);
+   SUM_regx3xx14x : FD2P port map( D => xxxxreturn426x14x, CP => clk, CD => rst
+                           , Q => SUMx3xx14x, QN => n2667);
+   SUM_reg3x1xx0x : FD2P port map( D => xxxxreturn1340x0x, CP => clk, CD => rst
+                           , Q => SUMx1xx0x, QN => n2668);
+   MULT16_reg2x2xx5x : FD2P port map( D => MULT8x2xx5x, CP => clk, CD => rst, Q
+                           => MULT16x2xx5x, QN => n2669);
+   SUM_reg4x0xx14x : FD2P port map( D => xxxxreturn1797x14x, CP => clk, CD => 
+                           rst, Q => SUMx0xx14x, QN => n2670);
+   MULT16_reg3x1xx15x : FD2P port map( D => MULT8x1xx7x, CP => clk, CD => rst, 
+                           Q => MULT16x1xx15x, QN => n2671);
+   MULT8_regx3xx2x : FD1P port map( D => n226x3xx2x, CP => clk, Q => 
+                           MULT8x3xx2x, QN => n2672);
+   COEF_reg3x1xx1x : FJK2SP port map( J => n2585, K => n2585, CP => clk, CD => 
+                           rst, TI => COEFx2xx1x, TE => coef_ld, Q => 
+                           COEFx1xx1x, QN => n2673);
+   n2585 <= '0';
+   MULT16_reg4x0xx7x : FD2P port map( D => MULT8x0xx7x, CP => clk, CD => rst, Q
+                           => MULT16x0xx7x, QN => n2674);
+   MULT16_reg2x2xx8x : FD2P port map( D => MULT8x2xx7x, CP => clk, CD => rst, Q
+                           => MULT16x2xx8x, QN => n2675);
+   REG1_reg2x2xx3x : FD2P port map( D => REG2_15_port, CP => clk, CD => rst, Q 
+                           => REG1x2xx3x, QN => n2676);
+   SUM_reg2x2xx11x : FD2P port map( D => xxxxreturn883x11x, CP => clk, CD => 
+                           rst, Q => SUMx2xx11x, QN => n2677);
+   REG1_reg4x0xx1x : FD2P port map( D => REG2_5_port, CP => clk, CD => rst, Q 
+                           => REG1x0xx1x, QN => n2678);
+   MULT16_reg4x0xx3x : FD2P port map( D => MULT8x0xx3x, CP => clk, CD => rst, Q
+                           => MULT16x0xx3x, QN => n2679);
+   MULT16_reg3x1xx11x : FD2P port map( D => MULT8x1xx7x, CP => clk, CD => rst, 
+                           Q => MULT16x1xx11x, QN => n2680);
+   SUM_regx3xx10x : FD2P port map( D => xxxxreturn426x10x, CP => clk, CD => rst
+                           , Q => SUMx3xx10x, QN => n2681);
+   SUM_reg4x0xx10x : FD2P port map( D => xxxxreturn1797x10x, CP => clk, CD => 
+                           rst, Q => SUMx0xx10x, QN => n2682);
+   MULT16_reg2x2xx1x : FD2P port map( D => MULT8x2xx1x, CP => clk, CD => rst, Q
+                           => MULT16x2xx1x, QN => n2683);
+   SUM_reg3x1xx4x : FD2P port map( D => xxxxreturn1340x4x, CP => clk, CD => rst
+                           , Q => SUMx1xx4x, QN => n2684);
+   MULT8_reg3x1xx7x : FD1P port map( D => n1140x1xx7x, CP => clk, Q => 
+                           MULT8x1xx7x, QN => n2685);
+   SUM_regx3xx12x : FD2P port map( D => xxxxreturn426x12x, CP => clk, CD => rst
+                           , Q => SUMx3xx12x, QN => n2686);
+   MULT16_reg2x2xx3x : FD2P port map( D => MULT8x2xx3x, CP => clk, CD => rst, Q
+                           => MULT16x2xx3x, QN => n2687);
+   SUM_reg3x1xx6x : FD2P port map( D => xxxxreturn1340x6x, CP => clk, CD => rst
+                           , Q => SUMx1xx6x, QN => n2688);
+   MULT8_reg3x1xx5x : FD1P port map( D => n1140x1xx5x, CP => clk, Q => 
+                           MULT8x1xx5x, QN => n2689);
+   MULT16_reg4x0xx1x : FD2P port map( D => MULT8x0xx1x, CP => clk, CD => rst, Q
+                           => MULT16x0xx1x, QN => n2690);
+   MULT16_reg3x1xx13x : FD2P port map( D => MULT8x1xx7x, CP => clk, CD => rst, 
+                           Q => MULT16x1xx13x, QN => n2691);
+   SUM_reg4x0xx12x : FD2P port map( D => xxxxreturn1797x12x, CP => clk, CD => 
+                           rst, Q => SUMx0xx12x, QN => n2692);
+   MULT16_reg4x0xx8x : FD2P port map( D => MULT8x0xx7x, CP => clk, CD => rst, Q
+                           => MULT16x0xx8x, QN => n2693);
+   MULT8_regx3xx0x : FD1P port map( D => n226x3xx0x, CP => clk, Q => 
+                           MULT8x3xx0x, QN => n2694);
+   REG1_reg4x0xx3x : FD2P port map( D => REG2_7_port, CP => clk, CD => rst, Q 
+                           => REG1x0xx3x, QN => n2695);
+   REG1_reg2x2xx1x : FD2P port map( D => REG2_13_port, CP => clk, CD => rst, Q 
+                           => REG1x2xx1x, QN => n2696);
+   SUM_reg2x2xx13x : FD2P port map( D => xxxxreturn883x13x, CP => clk, CD => 
+                           rst, Q => SUMx2xx13x, QN => n2697);
+   COEF_regx3xx3x : FJK2SP port map( J => n2586, K => n2586, CP => clk, CD => 
+                           rst, TI => Xn_in(3), TE => coef_ld, Q => COEFx3xx3x,
+                           QN => n2698);
+   n2586 <= '0';
+   COEF_reg3x1xx3x : FJK2SP port map( J => n2587, K => n2587, CP => clk, CD => 
+                           rst, TI => COEFx2xx3x, TE => coef_ld, Q => 
+                           COEFx1xx3x, QN => n2699);
+   n2587 <= '0';
+   MULT8_reg3x1xx1x : FD1P port map( D => n1140x1xx1x, CP => clk, Q => 
+                           MULT8x1xx1x, QN => n2700);
+   MULT16_reg4x0xx5x : FD2P port map( D => MULT8x0xx5x, CP => clk, CD => rst, Q
+                           => MULT16x0xx5x, QN => n2701);
+   SUM_reg3x1xx2x : FD2P port map( D => xxxxreturn1340x2x, CP => clk, CD => rst
+                           , Q => SUMx1xx2x, QN => n2702);
+   REG2_regx3xx0x : FD2P port map( D => REG1x3xx0x, CP => clk, CD => rst, Q => 
+                           REG2_12_port, QN => n2703);
+   MULT16_reg2x2xx7x : FD2P port map( D => MULT8x2xx7x, CP => clk, CD => rst, Q
+                           => MULT16x2xx7x, QN => n2704);
+   MULT8_regx3xx4x : FD1P port map( D => n226x3xx4x, CP => clk, Q => 
+                           MULT8x3xx4x, QN => n2705);
+   REG2_reg4x0xx3x : FD2P port map( D => REG1x0xx3x, CP => clk, CD => rst, Q =>
+                           REG2_3_port, QN => n2706);
+   REG2_reg2x2xx1x : FD2P port map( D => REG1x2xx1x, CP => clk, CD => rst, Q =>
+                           REG2_9_port, QN => n2707);
+   MULT16_reg4x0xx4x : FD2P port map( D => MULT8x0xx4x, CP => clk, CD => rst, Q
+                           => MULT16x0xx4x, QN => n2708);
+   COEF_reg3x1xx2x : FJK2SP port map( J => n2588, K => n2588, CP => clk, CD => 
+                           rst, TI => COEFx2xx2x, TE => coef_ld, Q => 
+                           COEFx1xx2x, QN => n2709);
+   n2588 <= '0';
+   COEF_regx3xx2x : FJK2SP port map( J => n2589, K => n2589, CP => clk, CD => 
+                           rst, TI => Xn_in(2), TE => coef_ld, Q => COEFx3xx2x,
+                           QN => n2710);
+   n2589 <= '0';
+   SUM_reg3x1xx3x : FD2P port map( D => xxxxreturn1340x3x, CP => clk, CD => rst
+                           , Q => SUMx1xx3x, QN => n2711);
+   MULT8_reg3x1xx0x : FD1P port map( D => n1140x1xx0x, CP => clk, Q => 
+                           MULT8x1xx0x, QN => n2712);
+   MULT16_reg2x2xx6x : FD2P port map( D => MULT8x2xx6x, CP => clk, CD => rst, Q
+                           => MULT16x2xx6x, QN => n2713);
+   REG2_regx3xx1x : FD2P port map( D => REG1x3xx1x, CP => clk, CD => rst, Q => 
+                           REG2_13_port, QN => n2714);
+   MULT8_regx3xx5x : FD1P port map( D => n226x3xx5x, CP => clk, Q => 
+                           MULT8x3xx5x, QN => n2715);
+   REG2_reg4x0xx2x : FD2P port map( D => REG1x0xx2x, CP => clk, CD => rst, Q =>
+                           REG2_2_port, QN => n2716);
+   REG2_reg2x2xx0x : FD2P port map( D => REG1x2xx0x, CP => clk, CD => rst, Q =>
+                           REG2_8_port, QN => n2717);
+   SUM_regx3xx13x : FD2P port map( D => xxxxreturn426x13x, CP => clk, CD => rst
+                           , Q => SUMx3xx13x, QN => n2718);
+   MULT16_reg2x2xx2x : FD2P port map( D => MULT8x2xx2x, CP => clk, CD => rst, Q
+                           => MULT16x2xx2x, QN => n2719);
+   MULT8_reg3x1xx4x : FD1P port map( D => n1140x1xx4x, CP => clk, Q => 
+                           MULT8x1xx4x, QN => n2720);
+   SUM_reg3x1xx7x : FD2P port map( D => xxxxreturn1340x7x, CP => clk, CD => rst
+                           , Q => SUMx1xx7x, QN => n2721);
+   MULT16_reg4x0xx0x : FD2P port map( D => MULT8x0xx0x, CP => clk, CD => rst, Q
+                           => MULT16x0xx0x, QN => n2722);
+   SUM_reg4x0xx13x : FD2P port map( D => xxxxreturn1797x13x, CP => clk, CD => 
+                           rst, Q => SUMx0xx13x, QN => n2723);
+   MULT16_reg3x1xx12x : FD2P port map( D => MULT8x1xx7x, CP => clk, CD => rst, 
+                           Q => MULT16x1xx12x, QN => n2724);
+   MULT16_reg4x0xx9x : FD2P port map( D => MULT8x0xx7x, CP => clk, CD => rst, Q
+                           => MULT16x0xx9x, QN => n2725);
+   REG1_reg4x0xx2x : FD2P port map( D => REG2_6_port, CP => clk, CD => rst, Q 
+                           => REG1x0xx2x, QN => n2726);
+   MULT8_regx3xx1x : FD1P port map( D => n226x3xx1x, CP => clk, Q => 
+                           MULT8x3xx1x, QN => n2727);
+   REG1_reg2x2xx0x : FD2P port map( D => REG2_12_port, CP => clk, CD => rst, Q 
+                           => REG1x2xx0x, QN => n2728);
+   SUM_reg2x2xx12x : FD2P port map( D => xxxxreturn883x12x, CP => clk, CD => 
+                           rst, Q => SUMx2xx12x, QN => n2729);
+   MULT8_regx3xx3x : FD1P port map( D => n226x3xx3x, CP => clk, Q => 
+                           MULT8x3xx3x, QN => n2730);
+   REG1_reg2x2xx2x : FD2P port map( D => REG2_14_port, CP => clk, CD => rst, Q 
+                           => REG1x2xx2x, QN => n2731);
+   MULT16_reg2x2xx9x : FD2P port map( D => MULT8x2xx7x, CP => clk, CD => rst, Q
+                           => MULT16x2xx9x, QN => n2732);
+   SUM_reg2x2xx10x : FD2P port map( D => xxxxreturn883x10x, CP => clk, CD => 
+                           rst, Q => SUMx2xx10x, QN => n2733);
+   REG1_reg4x0xx0x : FD2P port map( D => REG2_4_port, CP => clk, CD => rst, Q 
+                           => REG1x0xx0x, QN => n2734);
+   MULT16_reg4x0xx2x : FD2P port map( D => MULT8x0xx2x, CP => clk, CD => rst, Q
+                           => MULT16x0xx2x, QN => n2735);
+   SUM_reg4x0xx11x : FD2P port map( D => xxxxreturn1797x11x, CP => clk, CD => 
+                           rst, Q => SUMx0xx11x, QN => n2736);
+   MULT16_reg3x1xx10x : FD2P port map( D => MULT8x1xx7x, CP => clk, CD => rst, 
+                           Q => MULT16x1xx10x, QN => n2737);
+   MULT16_reg2x2xx0x : FD2P port map( D => MULT8x2xx0x, CP => clk, CD => rst, Q
+                           => MULT16x2xx0x, QN => n2738);
+   MULT8_reg3x1xx6x : FD1P port map( D => n1140x1xx6x, CP => clk, Q => 
+                           MULT8x1xx6x, QN => n2739);
+   SUM_regx3xx11x : FD2P port map( D => xxxxreturn426x11x, CP => clk, CD => rst
+                           , Q => SUMx3xx11x, QN => n2740);
+   SUM_reg3x1xx5x : FD2P port map( D => xxxxreturn1340x5x, CP => clk, CD => rst
+                           , Q => SUMx1xx5x, QN => n2741);
+   REG2_reg2x2xx2x : FD2P port map( D => REG1x2xx2x, CP => clk, CD => rst, Q =>
+                           REG2_10_port, QN => n2742);
+   SUM_reg2x2xx14x : FD2P port map( D => xxxxreturn883x14x, CP => clk, CD => 
+                           rst, Q => SUMx2xx14x, QN => n2743);
+   MULT8_regx3xx7x : FD1P port map( D => n226x3xx7x, CP => clk, Q => 
+                           MULT8x3xx7x, QN => n2744);
+   SUM_reg3x1xx8x : FD2P port map( D => xxxxreturn1340x8x, CP => clk, CD => rst
+                           , Q => SUMx1xx8x, QN => n2745);
+   REG2_reg4x0xx0x : FD2P port map( D => REG1x0xx0x, CP => clk, CD => rst, Q =>
+                           REG2_0_port, QN => n2746);
+   COEF_regx3xx0x : FJK2SP port map( J => n2590, K => n2590, CP => clk, CD => 
+                           rst, TI => Xn_in(0), TE => coef_ld, Q => COEFx3xx0x,
+                           QN => n2747);
+   n2590 <= '0';
+   SUM_regx3xx15x : FD2P port map( D => xxxxreturn426x15x, CP => clk, CD => rst
+                           , Q => SUMx3xx15x, QN => n2748);
+   SUM_reg3x1xx1x : FD2P port map( D => xxxxreturn1340x1x, CP => clk, CD => rst
+                           , Q => SUMx1xx1x, QN => n2749);
+   MULT8_reg3x1xx2x : FD1P port map( D => n1140x1xx2x, CP => clk, Q => 
+                           MULT8x1xx2x, QN => n2750);
+   REG2_regx3xx3x : FD2P port map( D => REG1x3xx3x, CP => clk, CD => rst, Q => 
+                           REG2_15_port, QN => n2751);
+   MULT16_reg2x2xx4x : FD2P port map( D => MULT8x2xx4x, CP => clk, CD => rst, Q
+                           => MULT16x2xx4x, QN => n2752);
+   MULT16_reg3x1xx14x : FD2P port map( D => MULT8x1xx7x, CP => clk, CD => rst, 
+                           Q => MULT16x1xx14x, QN => n2753);
+   SUM_reg4x0xx15x : FD2P port map( D => xxxxreturn1797x15x, CP => clk, CD => 
+                           rst, Q => SUMx0xx15x, QN => n2754);
+   COEF_reg3x1xx0x : FJK2SP port map( J => n2591, K => n2591, CP => clk, CD => 
+                           rst, TI => COEFx2xx0x, TE => coef_ld, Q => 
+                           COEFx1xx0x, QN => n2755);
+   n2591 <= '0';
+   MULT16_reg4x0xx6x : FD2P port map( D => MULT8x0xx6x, CP => clk, CD => rst, Q
+                           => MULT16x0xx6x, QN => n2756);
+   SUM_regx3xx6x : FD2P port map( D => xxxxreturn426x6x, CP => clk, CD => rst, 
+                           Q => SUMx3xx6x, QN => n2757);
+   SUM_reg2x2xx0x : FD2P port map( D => xxxxreturn883x0x, CP => clk, CD => rst,
+                           Q => SUMx2xx0x, QN => n2758);
+   MULT8_reg2x2xx3x : FD1P port map( D => n683x2xx3x, CP => clk, Q => 
+                           MULT8x2xx3x, QN => n2759);
+   MULT16_regx3xx11x : FD2P port map( D => MULT8x3xx7x, CP => clk, CD => rst, Q
+                           => MULT16x3xx11x, QN => n2760);
+   COEF_reg4x0xx3x : FJK2SP port map( J => n2592, K => n2592, CP => clk, CD => 
+                           rst, TI => COEFx1xx3x, TE => coef_ld, Q => 
+                           COEFx0xx3x, QN => n2761);
+   n2592 <= '0';
+   MULT16_regx3xx4x : FD2P port map( D => MULT8x3xx4x, CP => clk, CD => rst, Q 
+                           => MULT16x3xx4x, QN => n2762);
+   MULT16_reg3x1xx5x : FD2P port map( D => MULT8x1xx5x, CP => clk, CD => rst, Q
+                           => MULT16x1xx5x, QN => n2763);
+   MULT8_reg4x0xx1x : FD1P port map( D => n1597x0xx1x, CP => clk, Q => 
+                           MULT8x0xx1x, QN => n2764);
+   SUM_reg4x0xx2x : FD2P port map( D => xxxxreturn1797x2x, CP => clk, CD => rst
+                           , Q => SUMx0xx2x, QN => n2765);
+   COEF_reg2x2xx1x : FJK2SP port map( J => n2593, K => n2593, CP => clk, CD => 
+                           rst, TI => COEFx3xx1x, TE => coef_ld, Q => 
+                           COEFx2xx1x, QN => n2766);
+   n2593 <= '0';
+   MULT16_reg2x2xx12x : FD2P port map( D => MULT8x2xx7x, CP => clk, CD => rst, 
+                           Q => MULT16x2xx12x, QN => n2767);
+   REG2_reg3x1xx3x : FD2P port map( D => REG1x1xx3x, CP => clk, CD => rst, Q =>
+                           REG2_7_port, QN => n2768);
+   SUM_reg2x2xx9x : FD2P port map( D => xxxxreturn883x9x, CP => clk, CD => rst,
+                           Q => SUMx2xx9x, QN => n2769);
+   MULT16_reg4x0xx13x : FD2P port map( D => MULT8x0xx7x, CP => clk, CD => rst, 
+                           Q => MULT16x0xx13x, QN => n2770);
+   SUM_reg3x1xx12x : FD2P port map( D => xxxxreturn1340x12x, CP => clk, CD => 
+                           rst, Q => SUMx1xx12x, QN => n2771);
+   SUM_reg4x0xx6x : FD2P port map( D => xxxxreturn1797x6x, CP => clk, CD => rst
+                           , Q => SUMx0xx6x, QN => n2772);
+   MULT16_regx3xx0x : FD2P port map( D => MULT8x3xx0x, CP => clk, CD => rst, Q 
+                           => MULT16x3xx0x, QN => n2773);
+   REG1_regx3xx0x : FD2P port map( D => REG2_16_port, CP => clk, CD => rst, Q 
+                           => REG1x3xx0x, QN => n2774);
+   MULT8_reg4x0xx5x : FD1P port map( D => n1597x0xx5x, CP => clk, Q => 
+                           MULT8x0xx5x, QN => n2775);
+   MULT16_regx3xx15x : FD2P port map( D => MULT8x3xx7x, CP => clk, CD => rst, Q
+                           => MULT16x3xx15x, QN => n2776);
+   MULT16_reg3x1xx1x : FD2P port map( D => MULT8x1xx1x, CP => clk, CD => rst, Q
+                           => MULT16x1xx1x, QN => n2777);
+   SUM_regx3xx2x : FD2P port map( D => xxxxreturn426x2x, CP => clk, CD => rst, 
+                           Q => SUMx3xx2x, QN => n2778);
+   MULT8_reg2x2xx7x : FD1P port map( D => n683x2xx7x, CP => clk, Q => 
+                           MULT8x2xx7x, QN => n2779);
+   SUM_reg2x2xx4x : FD2P port map( D => xxxxreturn883x4x, CP => clk, CD => rst,
+                           Q => SUMx2xx4x, QN => n2780);
+   MULT16_reg3x1xx8x : FD2P port map( D => MULT8x1xx7x, CP => clk, CD => rst, Q
+                           => MULT16x1xx8x, QN => n2781);
+   REG1_reg3x1xx3x : FD2P port map( D => REG2_11_port, CP => clk, CD => rst, Q 
+                           => REG1x1xx3x, QN => n2782);
+   MULT16_regx3xx9x : FD2P port map( D => MULT8x3xx7x, CP => clk, CD => rst, Q 
+                           => MULT16x3xx9x, QN => n2783);
+   SUM_reg3x1xx14x : FD2P port map( D => xxxxreturn1340x14x, CP => clk, CD => 
+                           rst, Q => SUMx1xx14x, QN => n2784);
+   MULT16_reg4x0xx15x : FD2P port map( D => MULT8x0xx7x, CP => clk, CD => rst, 
+                           Q => MULT16x0xx15x, QN => n2785);
+   SUM_regx3xx9x : FD2P port map( D => xxxxreturn426x9x, CP => clk, CD => rst, 
+                           Q => SUMx3xx9x, QN => n2786);
+   REG1_regx3xx2x : FD2P port map( D => REG2_18_port, CP => clk, CD => rst, Q 
+                           => REG1x3xx2x, QN => n2787);
+   REG1_reg3x1xx1x : FD2P port map( D => REG2_9_port, CP => clk, CD => rst, Q 
+                           => REG1x1xx1x, QN => n2788);
+   MULT16_reg3x1xx3x : FD2P port map( D => MULT8x1xx3x, CP => clk, CD => rst, Q
+                           => MULT16x1xx3x, QN => n2789);
+   SUM_regx3xx0x : FD2P port map( D => xxxxreturn426x0x, CP => clk, CD => rst, 
+                           Q => SUMx3xx0x, QN => n2790);
+   MULT8_reg2x2xx5x : FD1P port map( D => n683x2xx5x, CP => clk, Q => 
+                           MULT8x2xx5x, QN => n2791);
+   SUM_reg2x2xx6x : FD2P port map( D => xxxxreturn883x6x, CP => clk, CD => rst,
+                           Q => SUMx2xx6x, QN => n2792);
+   MULT16_reg2x2xx14x : FD2P port map( D => MULT8x2xx7x, CP => clk, CD => rst, 
+                           Q => MULT16x2xx14x, QN => n2793);
+   SUM_reg4x0xx4x : FD2P port map( D => xxxxreturn1797x4x, CP => clk, CD => rst
+                           , Q => SUMx0xx4x, QN => n2794);
+   MULT16_regx3xx2x : FD2P port map( D => MULT8x3xx2x, CP => clk, CD => rst, Q 
+                           => MULT16x3xx2x, QN => n2795);
+   MULT8_reg4x0xx7x : FD1P port map( D => n1597x0xx7x, CP => clk, Q => 
+                           MULT8x0xx7x, QN => n2796);
+   MULT16_reg4x0xx11x : FD2P port map( D => MULT8x0xx7x, CP => clk, CD => rst, 
+                           Q => MULT16x0xx11x, QN => n2797);
+   SUM_reg3x1xx10x : FD2P port map( D => xxxxreturn1340x10x, CP => clk, CD => 
+                           rst, Q => SUMx1xx10x, QN => n2798);
+   SUM_reg4x0xx9x : FD2P port map( D => xxxxreturn1797x9x, CP => clk, CD => rst
+                           , Q => SUMx0xx9x, QN => n2799);
+   MULT16_regx3xx6x : FD2P port map( D => MULT8x3xx6x, CP => clk, CD => rst, Q 
+                           => MULT16x3xx6x, QN => n2800);
+   REG2_reg3x1xx1x : FD2P port map( D => REG1x1xx1x, CP => clk, CD => rst, Q =>
+                           REG2_5_port, QN => n2801);
+   MULT8_reg4x0xx3x : FD1P port map( D => n1597x0xx3x, CP => clk, Q => 
+                           MULT8x0xx3x, QN => n2802);
+   SUM_reg4x0xx0x : FD2P port map( D => xxxxreturn1797x0x, CP => clk, CD => rst
+                           , Q => SUMx0xx0x, QN => n2803);
+   COEF_reg2x2xx3x : FJK2SP port map( J => n2594, K => n2594, CP => clk, CD => 
+                           rst, TI => COEFx3xx3x, TE => coef_ld, Q => 
+                           COEFx2xx3x, QN => n2804);
+   n2594 <= '0';
+   MULT16_reg2x2xx10x : FD2P port map( D => MULT8x2xx7x, CP => clk, CD => rst, 
+                           Q => MULT16x2xx10x, QN => n2805);
+   SUM_regx3xx4x : FD2P port map( D => xxxxreturn426x4x, CP => clk, CD => rst, 
+                           Q => SUMx3xx4x, QN => n2806);
+   SUM_reg2x2xx2x : FD2P port map( D => xxxxreturn883x2x, CP => clk, CD => rst,
+                           Q => SUMx2xx2x, QN => n2807);
+   MULT8_reg2x2xx1x : FD1P port map( D => n683x2xx1x, CP => clk, Q => 
+                           MULT8x2xx1x, QN => n2808);
+   MULT16_regx3xx13x : FD2P port map( D => MULT8x3xx7x, CP => clk, CD => rst, Q
+                           => MULT16x3xx13x, QN => n2809);
+   MULT16_reg3x1xx7x : FD2P port map( D => MULT8x1xx7x, CP => clk, CD => rst, Q
+                           => MULT16x1xx7x, QN => n2810);
+   COEF_reg4x0xx1x : FJK2SP port map( J => n2595, K => n2595, CP => clk, CD => 
+                           rst, TI => COEFx1xx1x, TE => coef_ld, Q => 
+                           COEFx0xx1x, QN => n2811);
+   n2595 <= '0';
+   mul_86xmult : FIR_filter_DW02_mult_4_4_3 port map( A(0) => COEFx3xx3x, A(1) 
+                           => COEFx3xx2x, A(2) => COEFx3xx1x, A(3) => 
+                           COEFx3xx0x, B(0) => REG1x3xx3x, B(1) => REG1x3xx2x, 
+                           B(2) => REG1x3xx1x, B(3) => REG1x3xx0x, TC => n2603,
+                           PRODUCT(0) => xxxxreturn384x7x, PRODUCT(1) => 
+                           xxxxreturn384x6x, PRODUCT(2) => xxxxreturn384x5x, 
+                           PRODUCT(3) => xxxxreturn384x4x, PRODUCT(4) => 
+                           xxxxreturn384x3x, PRODUCT(5) => xxxxreturn384x2x, 
+                           PRODUCT(6) => xxxxreturn384x1x, PRODUCT(7) => 
+                           xxxxreturn384x0x);
+   add_93xplus : FIR_filter_DW01_add_16_3 port map( A(0) => MULT16x3xx15x, A(1)
+                           => MULT16x3xx14x, A(2) => MULT16x3xx13x, A(3) => 
+                           MULT16x3xx12x, A(4) => MULT16x3xx11x, A(5) => 
+                           MULT16x3xx10x, A(6) => MULT16x3xx9x, A(7) => 
+                           MULT16x3xx8x, A(8) => MULT16x3xx7x, A(9) => 
+                           MULT16x3xx6x, A(10) => MULT16x3xx5x, A(11) => 
+                           MULT16x3xx4x, A(12) => MULT16x3xx3x, A(13) => 
+                           MULT16x3xx2x, A(14) => MULT16x3xx1x, A(15) => 
+                           MULT16x3xx0x, B(0) => Yn_in(15), B(1) => Yn_in(14), 
+                           B(2) => Yn_in(13), B(3) => Yn_in(12), B(4) => 
+                           Yn_in(11), B(5) => Yn_in(10), B(6) => Yn_in(9), B(7)
+                           => Yn_in(8), B(8) => Yn_in(7), B(9) => Yn_in(6), 
+                           B(10) => Yn_in(5), B(11) => Yn_in(4), B(12) => 
+                           Yn_in(3), B(13) => Yn_in(2), B(14) => Yn_in(1), 
+                           B(15) => Yn_in(0), CI => n2602, SUM(0) => 
+                           xxxxreturn426x15x, SUM(1) => xxxxreturn426x14x, 
+                           SUM(2) => xxxxreturn426x13x, SUM(3) => 
+                           xxxxreturn426x12x, SUM(4) => xxxxreturn426x11x, 
+                           SUM(5) => xxxxreturn426x10x, SUM(6) => 
+                           xxxxreturn426x9x, SUM(7) => xxxxreturn426x8x, SUM(8)
+                           => xxxxreturn426x7x, SUM(9) => xxxxreturn426x6x, 
+                           SUM(10) => xxxxreturn426x5x, SUM(11) => 
+                           xxxxreturn426x4x, SUM(12) => xxxxreturn426x3x, 
+                           SUM(13) => xxxxreturn426x2x, SUM(14) => 
+                           xxxxreturn426x1x, SUM(15) => xxxxreturn426x0x, CO =>
+                           n2812);
+   mul_86xmult_103 : FIR_filter_DW02_mult_4_4_2 port map( A(0) => COEFx2xx3x, 
+                           A(1) => COEFx2xx2x, A(2) => COEFx2xx1x, A(3) => 
+                           COEFx2xx0x, B(0) => REG1x2xx3x, B(1) => REG1x2xx2x, 
+                           B(2) => REG1x2xx1x, B(3) => REG1x2xx0x, TC => n2601,
+                           PRODUCT(0) => xxxxreturn841x7x, PRODUCT(1) => 
+                           xxxxreturn841x6x, PRODUCT(2) => xxxxreturn841x5x, 
+                           PRODUCT(3) => xxxxreturn841x4x, PRODUCT(4) => 
+                           xxxxreturn841x3x, PRODUCT(5) => xxxxreturn841x2x, 
+                           PRODUCT(6) => xxxxreturn841x1x, PRODUCT(7) => 
+                           xxxxreturn841x0x);
+   add_93xplus_104 : FIR_filter_DW01_add_16_2 port map( A(0) => MULT16x2xx15x, 
+                           A(1) => MULT16x2xx14x, A(2) => MULT16x2xx13x, A(3) 
+                           => MULT16x2xx12x, A(4) => MULT16x2xx11x, A(5) => 
+                           MULT16x2xx10x, A(6) => MULT16x2xx9x, A(7) => 
+                           MULT16x2xx8x, A(8) => MULT16x2xx7x, A(9) => 
+                           MULT16x2xx6x, A(10) => MULT16x2xx5x, A(11) => 
+                           MULT16x2xx4x, A(12) => MULT16x2xx3x, A(13) => 
+                           MULT16x2xx2x, A(14) => MULT16x2xx1x, A(15) => 
+                           MULT16x2xx0x, B(0) => SUMx3xx15x, B(1) => SUMx3xx14x
+                           , B(2) => SUMx3xx13x, B(3) => SUMx3xx12x, B(4) => 
+                           SUMx3xx11x, B(5) => SUMx3xx10x, B(6) => SUMx3xx9x, 
+                           B(7) => SUMx3xx8x, B(8) => SUMx3xx7x, B(9) => 
+                           SUMx3xx6x, B(10) => SUMx3xx5x, B(11) => SUMx3xx4x, 
+                           B(12) => SUMx3xx3x, B(13) => SUMx3xx2x, B(14) => 
+                           SUMx3xx1x, B(15) => SUMx3xx0x, CI => n2600, SUM(0) 
+                           => xxxxreturn883x15x, SUM(1) => xxxxreturn883x14x, 
+                           SUM(2) => xxxxreturn883x13x, SUM(3) => 
+                           xxxxreturn883x12x, SUM(4) => xxxxreturn883x11x, 
+                           SUM(5) => xxxxreturn883x10x, SUM(6) => 
+                           xxxxreturn883x9x, SUM(7) => xxxxreturn883x8x, SUM(8)
+                           => xxxxreturn883x7x, SUM(9) => xxxxreturn883x6x, 
+                           SUM(10) => xxxxreturn883x5x, SUM(11) => 
+                           xxxxreturn883x4x, SUM(12) => xxxxreturn883x3x, 
+                           SUM(13) => xxxxreturn883x2x, SUM(14) => 
+                           xxxxreturn883x1x, SUM(15) => xxxxreturn883x0x, CO =>
+                           n2813);
+   mul_86xmult_151 : FIR_filter_DW02_mult_4_4_1 port map( A(0) => COEFx1xx3x, 
+                           A(1) => COEFx1xx2x, A(2) => COEFx1xx1x, A(3) => 
+                           COEFx1xx0x, B(0) => REG1x1xx3x, B(1) => REG1x1xx2x, 
+                           B(2) => REG1x1xx1x, B(3) => REG1x1xx0x, TC => n2599,
+                           PRODUCT(0) => xxxxreturn1298x7x, PRODUCT(1) => 
+                           xxxxreturn1298x6x, PRODUCT(2) => xxxxreturn1298x5x, 
+                           PRODUCT(3) => xxxxreturn1298x4x, PRODUCT(4) => 
+                           xxxxreturn1298x3x, PRODUCT(5) => xxxxreturn1298x2x, 
+                           PRODUCT(6) => xxxxreturn1298x1x, PRODUCT(7) => 
+                           xxxxreturn1298x0x);
+   add_93xplus_152 : FIR_filter_DW01_add_16_1 port map( A(0) => MULT16x1xx15x, 
+                           A(1) => MULT16x1xx14x, A(2) => MULT16x1xx13x, A(3) 
+                           => MULT16x1xx12x, A(4) => MULT16x1xx11x, A(5) => 
+                           MULT16x1xx10x, A(6) => MULT16x1xx9x, A(7) => 
+                           MULT16x1xx8x, A(8) => MULT16x1xx7x, A(9) => 
+                           MULT16x1xx6x, A(10) => MULT16x1xx5x, A(11) => 
+                           MULT16x1xx4x, A(12) => MULT16x1xx3x, A(13) => 
+                           MULT16x1xx2x, A(14) => MULT16x1xx1x, A(15) => 
+                           MULT16x1xx0x, B(0) => SUMx2xx15x, B(1) => SUMx2xx14x
+                           , B(2) => SUMx2xx13x, B(3) => SUMx2xx12x, B(4) => 
+                           SUMx2xx11x, B(5) => SUMx2xx10x, B(6) => SUMx2xx9x, 
+                           B(7) => SUMx2xx8x, B(8) => SUMx2xx7x, B(9) => 
+                           SUMx2xx6x, B(10) => SUMx2xx5x, B(11) => SUMx2xx4x, 
+                           B(12) => SUMx2xx3x, B(13) => SUMx2xx2x, B(14) => 
+                           SUMx2xx1x, B(15) => SUMx2xx0x, CI => n2598, SUM(0) 
+                           => xxxxreturn1340x15x, SUM(1) => xxxxreturn1340x14x,
+                           SUM(2) => xxxxreturn1340x13x, SUM(3) => 
+                           xxxxreturn1340x12x, SUM(4) => xxxxreturn1340x11x, 
+                           SUM(5) => xxxxreturn1340x10x, SUM(6) => 
+                           xxxxreturn1340x9x, SUM(7) => xxxxreturn1340x8x, 
+                           SUM(8) => xxxxreturn1340x7x, SUM(9) => 
+                           xxxxreturn1340x6x, SUM(10) => xxxxreturn1340x5x, 
+                           SUM(11) => xxxxreturn1340x4x, SUM(12) => 
+                           xxxxreturn1340x3x, SUM(13) => xxxxreturn1340x2x, 
+                           SUM(14) => xxxxreturn1340x1x, SUM(15) => 
+                           xxxxreturn1340x0x, CO => n2814);
+   mul_86xmult_199 : FIR_filter_DW02_mult_4_4_0 port map( A(0) => COEFx0xx3x, 
+                           A(1) => COEFx0xx2x, A(2) => COEFx0xx1x, A(3) => 
+                           COEFx0xx0x, B(0) => REG1x0xx3x, B(1) => REG1x0xx2x, 
+                           B(2) => REG1x0xx1x, B(3) => REG1x0xx0x, TC => n2597,
+                           PRODUCT(0) => xxxxreturn1755x7x, PRODUCT(1) => 
+                           xxxxreturn1755x6x, PRODUCT(2) => xxxxreturn1755x5x, 
+                           PRODUCT(3) => xxxxreturn1755x4x, PRODUCT(4) => 
+                           xxxxreturn1755x3x, PRODUCT(5) => xxxxreturn1755x2x, 
+                           PRODUCT(6) => xxxxreturn1755x1x, PRODUCT(7) => 
+                           xxxxreturn1755x0x);
+   add_93xplus_200 : FIR_filter_DW01_add_16_0 port map( A(0) => MULT16x0xx15x, 
+                           A(1) => MULT16x0xx14x, A(2) => MULT16x0xx13x, A(3) 
+                           => MULT16x0xx12x, A(4) => MULT16x0xx11x, A(5) => 
+                           MULT16x0xx10x, A(6) => MULT16x0xx9x, A(7) => 
+                           MULT16x0xx8x, A(8) => MULT16x0xx7x, A(9) => 
+                           MULT16x0xx6x, A(10) => MULT16x0xx5x, A(11) => 
+                           MULT16x0xx4x, A(12) => MULT16x0xx3x, A(13) => 
+                           MULT16x0xx2x, A(14) => MULT16x0xx1x, A(15) => 
+                           MULT16x0xx0x, B(0) => SUMx1xx15x, B(1) => SUMx1xx14x
+                           , B(2) => SUMx1xx13x, B(3) => SUMx1xx12x, B(4) => 
+                           SUMx1xx11x, B(5) => SUMx1xx10x, B(6) => SUMx1xx9x, 
+                           B(7) => SUMx1xx8x, B(8) => SUMx1xx7x, B(9) => 
+                           SUMx1xx6x, B(10) => SUMx1xx5x, B(11) => SUMx1xx4x, 
+                           B(12) => SUMx1xx3x, B(13) => SUMx1xx2x, B(14) => 
+                           SUMx1xx1x, B(15) => SUMx1xx0x, CI => n2596, SUM(0) 
+                           => xxxxreturn1797x15x, SUM(1) => xxxxreturn1797x14x,
+                           SUM(2) => xxxxreturn1797x13x, SUM(3) => 
+                           xxxxreturn1797x12x, SUM(4) => xxxxreturn1797x11x, 
+                           SUM(5) => xxxxreturn1797x10x, SUM(6) => 
+                           xxxxreturn1797x9x, SUM(7) => xxxxreturn1797x8x, 
+                           SUM(8) => xxxxreturn1797x7x, SUM(9) => 
+                           xxxxreturn1797x6x, SUM(10) => xxxxreturn1797x5x, 
+                           SUM(11) => xxxxreturn1797x4x, SUM(12) => 
+                           xxxxreturn1797x3x, SUM(13) => xxxxreturn1797x2x, 
+                           SUM(14) => xxxxreturn1797x1x, SUM(15) => 
+                           xxxxreturn1797x0x, CO => n2815);
+   n2596 <= '0';
+   n2597 <= '1';
+   n2598 <= '0';
+   n2599 <= '1';
+   n2600 <= '0';
+   n2601 <= '1';
+   n2602 <= '0';
+   n2603 <= '1';
+
+end SYN;

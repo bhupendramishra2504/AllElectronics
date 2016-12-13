@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+    <resources>
+        <string-array name="connector_list">
+            <item>USB</item>
+            <item>RS232</item>
+            <item>PARALLEL</item>
+            <item>VIDEO PORT</item>
+            <item>ETHERNET</item>
+            <item>HDMI</item>
+            <item>SD-CARD</item>
+            <item>SATA HARD DISK</item>
+            <item>JACK CONNECTOR</item>
+            <item>FIREWIRE CONNECTOR</item>
+            <item>IPHONE LIGHTNING PIN CONNECTOR</item>
+            <item>RCA CONNECTOR</item>
+
+        </string-array>
+    </resources>

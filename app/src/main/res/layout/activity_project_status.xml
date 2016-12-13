@@ -1,0 +1,38 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingLeft="16dp"
+    android:paddingRight="16dp"
+    android:paddingTop="16dp"
+    android:paddingBottom="16dp"
+    android:orientation="vertical"
+    android:background="#0087BD"
+    tools:context="com.mlmishra.bhupendramishra.allelectronics.Signup_firebase"
+    >
+    <LinearLayout
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:orientation="vertical"
+        android:gravity="right"
+        android:layout_marginBottom="20dp"
+
+        >
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="right"
+            android:id="@+id/psuser"
+            android:paddingLeft="8dp"
+            android:paddingRight="8dp"
+            android:textColor="#ffffff"
+            android:background="@null"
+            />
+    </LinearLayout>
+
+
+    <TextView  android:layout_width="match_parent"
+        android:layout_height="400dp" android:id="@+id/showdata" android:layout_weight="0.8" android:scrollbars = "vertical" android:textIsSelectable="true" android:background="@drawable/allborder"
+        android:padding="10dp" android:textColor="#ffffff" />
+
+</LinearLayout>

@@ -1,0 +1,356 @@
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.std_logic_arith.all;		 
+use ieee.std_logic_unsigned.all;
+
+entity ROM is
+port(	Clock   : in std_logic;
+	Reset	: in std_logic;	
+	Enable	: in std_logic;
+	Read	: in std_logic;
+	Address	: in std_logic_vector(4 downto 0);
+	Data_out: out std_logic_vector(7 downto 0)
+);
+end ROM;
+
+--------------------------------------------------------------
+
+architecture Behav of ROM is
+
+    type ROM_Array is array (0 to 31) 
+	of std_logic_vector(7 downto 0);
+
+    constant Content: ROM_Array := (
+        0 => "00000001",		-- Suppose ROM has 
+        1 => "00000010",		-- prestored value
+        2 => "00000011",		-- like this table
+        3 => "00000100",       		--
+        4 => "00000101",		--
+        5 => "00000110",       		--
+        6 => "00000111",		--
+        7 => "00001000",       		--
+        8 => "00001001",       		--
+        9 => "00001010",       		--
+        10 => "00001011",		--
+	11 => "00001100",       	--
+        12 => "00001101",      		--
+        13 => "00001110",		--
+	14 => "00001111",		--
+	OTHERS => "11111111"		--
+	);       
+
+begin
+    process(Clock, Reset, Read, Address)
+    begin
+        if( Reset = '1' ) then
+	    Data_out <= "ZZZZZZZZ";
+        elsif( Clock'event and Clock = '1' ) then
+	    if Enable = '1' then
+		if( Read = '1' ) then
+		    Data_out <= Content(conv_integer(Address));
+            	else
+                    Data_out <= "ZZZZZZZZ";
+            	end if;
+	    end if;
+        end if;
+    end process;
+end Behav;
+
+
+TEST BENCH
+
+library IEEE;
+use IEEE.std_logic_1164.all;
+use IEEE.std_logic_arith.all;
+use ieee.std_logic_unsigned.all;
+ 
+entity ROM_TB is 			-- entity declaration
+end ROM_TB; 
+
+-------------------------------------------------------------
+ 
+architecture TB of ROM_TB is 
+
+component ROM is
+port(	Clock   : in std_logic;
+	Reset	: in std_logic;	
+	Enable	: in std_logic;
+	Read	: in std_logic;
+	Address	: in std_logic_vector(4 downto 0);
+	Data_out: out std_logic_vector(7 downto 0)
+);
+end component;
+
+signal T_Clock, T_Reset, T_Read, T_Enable: std_logic;
+signal T_Address: std_logic_vector(4 downto 0);
+signal T_Data_out: std_logic_vector(7 downto 0);
+
+begin 
+	
+    U_ROM: ROM port map (T_Clock, T_Reset, T_Enable, 
+		T_Read, T_Address, T_Data_out);
+
+    Clk_sig: process
+    
+    begin
+        T_Clock<='1';			-- clock cycle 10 ns
+        wait for 5 ns;
+        T_Clock<='0';
+        wait for 5 ns;
+    end process;
+							
+    process
+
+	variable err_cnt: integer := 0;
+
+    begin
+
+	T_Enable <= '1';
+	T_Read <= '0';
+	T_Reset <= '1';
+	T_Address <= (T_Address'range => '0');
+	wait for 20 ns;			
+	assert(T_Data_out = "ZZZZZZZZ")
+	report "Something wrong!" severity Error;		
+	if (T_Data_out /= "ZZZZZZZZ") then
+	    err_cnt := err_cnt + 1;
+	end if;
+		
+	T_Reset <= '0';
+	T_Read <= '1';
+		
+	for i in 0 to 31 loop
+	    wait for 20 ns;
+	    if T_Address < 15 then
+		assert (T_Data_out = i + 1) 
+		    report "Something wrong!" severity Error;
+		if (T_Data_out /= i + 1) then
+		    err_cnt := err_cnt + 1;
+		end if;
+	    else
+		assert (T_Data_out = "11111111")
+		report "Something wrong!" severity Error;
+		if (T_Data_out /= "11111111") then
+		    err_cnt := err_cnt + 1;
+		end if;
+	    end if;
+	    T_Address <= T_Address + '1';			
+	end loop;
+		
+        -- summary of all the tests
+        if (err_cnt=0) then                     
+            assert false 
+            report "Testbench of ROM completed successfully!" 
+            severity note; 
+        else
+            assert true
+            report "Something wrong, try again"
+            severity error;
+        end if;
+		
+	wait;
+    end process;
+
+end TB;
+
+--------------------------------------------------------------
+configuration CFG_TB of ROM_TB is 
+        for TB 
+        end for; 
+end CFG_TB; 
+
+
+GATE LEVEL IMPLEMENTATION
+
+library IEEE,LSI_10K;
+
+use IEEE.std_logic_1164.all;
+use IEEE.std_logic_arith.all;
+use LSI_10K.COMPONENTS.all;
+
+package CONV_PACK_ROM is
+
+-- define attributes
+attribute ENUM_ENCODING : STRING;
+
+end CONV_PACK_ROM;
+
+library IEEE,LSI_10K;
+
+use IEEE.std_logic_1164.all;
+use IEEE.std_logic_arith.all;
+use LSI_10K.COMPONENTS.all;
+
+use work.CONV_PACK_ROM.all;
+
+entity ROM is
+
+   port( Clock, Reset, Enable, Read : in std_logic;  Address : in 
+         std_logic_vector (4 downto 0);  Data_out : out std_logic_vector (7 
+         downto 0));
+
+end ROM;
+
+architecture SYN of ROM is
+
+   component BTS4
+      port( A, E : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component FDS2L
+      port( D, CP, CR, LD : in std_logic;  Q, QN : out std_logic);
+   end component;
+   
+   component NR2
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component AO3
+      port( A, B, C, D : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component ND2
+      port( A, B : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component IV
+      port( A : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component NR3
+      port( A, B, C : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component AO2
+      port( A, B, C, D : in std_logic;  Z : out std_logic);
+   end component;
+   
+   component FJK3SP
+      port( J, K, CP, CD, SD, TI, TE : in std_logic;  Q, QN : out std_logic);
+   end component;
+   
+   signal member127_1_port, member127_3_port, member127_7_port, 
+      Data_out_Q69_7_port, Data_out_Q69_3_port, Data_out_Q69_1_port, 
+      Data_out_Q69_5_port, Data_out_Q69_4_port, Data_out_Q69_0_port, 
+      Data_out_Q69_2_port, Data_out_Q69_6_port, n86_7_port, member127_2_port, 
+      member127_0_port, n507, n508, n509, n510, n511, n512, n513, n514, n515, 
+      n516, n517, n518, n519, n520, n521, n522, n523, n524, n525, n526, n527, 
+      n528, n529, n530, n531, n532, n533, n534, n535, n536, n537, n538, n539, 
+      n540, n541, n542, n543, n544, n545, n546, n547, n548, n549, n550, n551, 
+      n552, n553, n554, n555, n556, n557, n558, n559, n560, n561, n562, n563, 
+      n564 : std_logic;
+
+begin
+   
+   Data_out_tri_0_label : BTS4 port map( A => Data_out_Q69_0_port, E => n517, Z
+                           => Data_out(0));
+   Data_out_tri_1_label : BTS4 port map( A => Data_out_Q69_1_port, E => n522, Z
+                           => Data_out(1));
+   Data_out_tri_2_label : BTS4 port map( A => Data_out_Q69_2_port, E => n518, Z
+                           => Data_out(2));
+   Data_out_tri_3_label : BTS4 port map( A => Data_out_Q69_3_port, E => n521, Z
+                           => Data_out(3));
+   Data_out_tri_4_label : BTS4 port map( A => Data_out_Q69_4_port, E => n516, Z
+                           => Data_out(4));
+   Data_out_tri_5_label : BTS4 port map( A => Data_out_Q69_5_port, E => n523, Z
+                           => Data_out(5));
+   Data_out_tri_6_label : BTS4 port map( A => Data_out_Q69_6_port, E => n519, Z
+                           => Data_out(6));
+   Data_out_tri_7_label : BTS4 port map( A => Data_out_Q69_7_port, E => n520, Z
+                           => Data_out(7));
+   Data_out_reg_6_label : FDS2L port map( D => member127_7_port, CP => Clock, 
+                           CR => n541, LD => Enable, Q => Data_out_Q69_6_port, 
+                           QN => n549);
+   Data_out_reg_2_label : FDS2L port map( D => member127_2_port, CP => Clock, 
+                           CR => n542, LD => Enable, Q => Data_out_Q69_2_port, 
+                           QN => n550);
+   Data_out_reg_0_label : FDS2L port map( D => member127_0_port, CP => Clock, 
+                           CR => n543, LD => Enable, Q => Data_out_Q69_0_port, 
+                           QN => n551);
+   Data_out_reg_4_label : FDS2L port map( D => member127_7_port, CP => Clock, 
+                           CR => n544, LD => Enable, Q => Data_out_Q69_4_port, 
+                           QN => n552);
+   Data_out_reg_5_label : FDS2L port map( D => member127_7_port, CP => Clock, 
+                           CR => n545, LD => Enable, Q => Data_out_Q69_5_port, 
+                           QN => n553);
+   Data_out_reg_3_label : FDS2L port map( D => member127_3_port, CP => Clock, 
+                           CR => n546, LD => Enable, Q => Data_out_Q69_3_port, 
+                           QN => n554);
+   Data_out_reg_1_label : FDS2L port map( D => member127_1_port, CP => Clock, 
+                           CR => n547, LD => Enable, Q => Data_out_Q69_1_port, 
+                           QN => n555);
+   Data_out_reg_7_label : FDS2L port map( D => member127_7_port, CP => Clock, 
+                           CR => n548, LD => Enable, Q => Data_out_Q69_7_port, 
+                           QN => n556);
+   U65 : NR2 port map( A => Address(4), B => n508, Z => n507);
+   U66 : AO3 port map( A => n509, B => n510, C => n511, D => n507, Z => 
+                           member127_3_port);
+   U67 : AO3 port map( A => Address(1), B => n509, C => n507, D => n512, Z => 
+                           member127_2_port);
+   U68 : AO3 port map( A => Address(1), B => n513, C => n507, D => n514, Z => 
+                           member127_1_port);
+   U69 : ND2 port map( A => Address(0), B => n507, Z => member127_0_port);
+   U70 : IV port map( A => Read, Z => n86_7_port);
+   U71 : IV port map( A => Reset, Z => n538);
+   U72 : NR3 port map( A => n510, B => n511, C => n509, Z => n508);
+   U73 : IV port map( A => Address(0), Z => n513);
+   U74 : IV port map( A => Address(2), Z => n509);
+   U75 : ND2 port map( A => Address(1), B => Address(0), Z => n510);
+   U76 : ND2 port map( A => Address(1), B => n513, Z => n514);
+   U77 : IV port map( A => n507, Z => member127_7_port);
+   U78 : AO2 port map( A => n514, B => Address(2), C => n510, D => n509, Z => 
+                           n515);
+   U79 : IV port map( A => Address(3), Z => n511);
+   U80 : IV port map( A => n515, Z => n512);
+   Data_out_tri_enable_reg_7_label : FJK3SP port map( J => n525, K => n525, CP 
+                           => Clock, CD => n524, SD => n538, TI => n86_7_port, 
+                           TE => Enable, Q => n557, QN => n520);
+   n524 <= '1';
+   n525 <= '0';
+   Data_out_tri_enable_reg_6_label : FJK3SP port map( J => n527, K => n527, CP 
+                           => Clock, CD => n526, SD => n538, TI => n86_7_port, 
+                           TE => Enable, Q => n558, QN => n519);
+   n526 <= '1';
+   n527 <= '0';
+   Data_out_tri_enable_reg_5_label : FJK3SP port map( J => n529, K => n529, CP 
+                           => Clock, CD => n528, SD => n538, TI => n86_7_port, 
+                           TE => Enable, Q => n559, QN => n523);
+   n528 <= '1';
+   n529 <= '0';
+   Data_out_tri_enable_reg_4_label : FJK3SP port map( J => n531, K => n531, CP 
+                           => Clock, CD => n530, SD => n538, TI => n86_7_port, 
+                           TE => Enable, Q => n560, QN => n516);
+   n530 <= '1';
+   n531 <= '0';
+   Data_out_tri_enable_reg_3_label : FJK3SP port map( J => n533, K => n533, CP 
+                           => Clock, CD => n532, SD => n538, TI => n86_7_port, 
+                           TE => Enable, Q => n561, QN => n521);
+   n532 <= '1';
+   n533 <= '0';
+   Data_out_tri_enable_reg_2_label : FJK3SP port map( J => n535, K => n535, CP 
+                           => Clock, CD => n534, SD => n538, TI => n86_7_port, 
+                           TE => Enable, Q => n562, QN => n518);
+   n534 <= '1';
+   n535 <= '0';
+   Data_out_tri_enable_reg_1_label : FJK3SP port map( J => n537, K => n537, CP 
+                           => Clock, CD => n536, SD => n538, TI => n86_7_port, 
+                           TE => Enable, Q => n563, QN => n522);
+   n536 <= '1';
+   n537 <= '0';
+   Data_out_tri_enable_reg_0_label : FJK3SP port map( J => n540, K => n540, CP 
+                           => Clock, CD => n539, SD => n538, TI => n86_7_port, 
+                           TE => Enable, Q => n564, QN => n517);
+   n539 <= '1';
+   n540 <= '0';
+   n541 <= '1';
+   n542 <= '1';
+   n543 <= '1';
+   n544 <= '1';
+   n545 <= '1';
+   n546 <= '1';
+   n547 <= '1';
+   n548 <= '1';
+
+end SYN;
+
+

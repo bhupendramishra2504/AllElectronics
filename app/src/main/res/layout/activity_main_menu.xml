@@ -1,0 +1,110 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:id="@+id/search_layout"
+    android:fillViewport="true"
+    android:layout_height="match_parent"
+    android:background="#0087BD"
+    tools:context="com.mlmishra.bhupendramishra.allelectronics.Controller_program"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+   >
+
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:paddingLeft="16dp"
+        android:paddingRight="16dp"
+        android:orientation="vertical"
+        tools:context="com.mlmishra.bhupendramishra.allelectronics.Signup_firebase"
+        android:gravity="center_horizontal">
+
+        <LinearLayout
+            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            android:orientation="vertical"
+            android:gravity="right"
+            android:layout_marginBottom="20dp"
+
+            >
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="right"
+                android:id="@+id/mmuser"
+                android:paddingLeft="8dp"
+                android:paddingRight="8dp"
+                android:textColor="#ffffff"
+                android:background="@null"
+                />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textStyle="bold"
+            android:textSize="15sp"
+            android:shadowDx="25"
+            android:shadowDy="25"
+            android:shadowRadius="50"
+            android:text="AllElectronics Console Menu"
+            android:id="@+id/mmtv0"
+            android:textColor="#ffffff"
+            android:layout_centerHorizontal="true" />
+
+
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="SELECT YOUR OPTION"
+            android:textStyle="bold"
+            android:textSize="15sp"
+            android:shadowDx="25"
+            android:shadowDy="25"
+            android:shadowRadius="50"
+            android:id="@+id/mmtv1"
+            android:textColor="#ffffff"
+            android:layout_centerHorizontal="true" />
+
+
+        <Button
+            android:id="@+id/mmsubmitpro"
+            android:layout_marginTop="40dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#ffffff"
+            android:text="Submit Your Project"
+            android:background="@drawable/allborder"
+
+            />
+
+        <Button
+            android:id="@+id/mmps"
+            android:layout_marginTop="10dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#ffffff"
+            android:text="Project Status"
+            android:background="@drawable/allborder"
+            android:layout_marginBottom="40dp"
+            />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="More options Coming Soon..."
+            android:textStyle="bold"
+            android:textSize="15sp"
+            android:shadowDx="25"
+            android:shadowDy="25"
+            android:shadowRadius="50"
+            android:id="@+id/mmtv2"
+            android:textColor="#ffffff"
+            android:layout_centerHorizontal="true" />
+
+
+
+    </LinearLayout>
+</ScrollView>

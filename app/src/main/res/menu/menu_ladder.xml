@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+    <!-- Single menu_ladder item
+         Set id, icon and Title for each menu_ladder item
+    -->
+    <item android:id="@+id/noexmaple"
+        android:title="NO CONTACT OF A" />
+
+    <item android:id="@+id/ncexample"
+        android:title="NC CONTACT OF A" />
+
+    <item android:id="@+id/coil"
+        android:title="COIL / OUTPUT " />
+
+    <item android:id="@+id/setcoil"
+        android:title="LATCH COIL / OUTPUT COIL" />
+
+    <item android:id="@+id/resetcoil"
+        android:title="RESET COIL / OUTPUT RESET" />
+
+    <item android:id="@+id/orexample"
+        android:title="A OR B" />
+
+    <item android:id="@+id/orexample2"
+        android:title="A OR B OR C" />
+
+    <item android:id="@+id/andexample"
+        android:title="A AND B" />
+
+    <item android:id="@+id/andexample2"
+        android:title="A AND B AND C" />
+
+    <item android:id="@+id/logic"
+        android:title="HOW LOGIC WORK" />
+
+    <item android:id="@+id/scan"
+        android:title="SCAN CYCLE OF PLC" />
+</menu>
